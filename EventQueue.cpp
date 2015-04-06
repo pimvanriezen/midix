@@ -60,27 +60,31 @@ void EventQueueManager::sendEvent (eventtype tp, serviceid svc, eventid id,
 
 // --------------------------------------------------------------------------
 void EventQueueManager::yield (void) {
-    while (true) {
-        if (hbuf.ring.rpos != hbuf.ring.wpos) {
-            volatile Event *ev = &hbuf.ring.rbuf[hbuf.ring.rpos];
-            hbuf.ring.rpos = (hbuf.ring.rpos+1) & 7;
-            for (uint8_t i=0; i<numsubscribers; ++i) {
-                if (subscribers[i].id == ev->service) {
-                    subscribers[i].svc->handleEvent (ev->type, ev->id,
-                                                     ev->X.wval,
-                                                     ev->Y, ev->Z);
-                    break;
+    if (hbuf.ring.rpos != hbuf.ring.wpos) {
+        volatile Event *ev = &hbuf.ring.rbuf[hbuf.ring.rpos];
+        hbuf.ring.rpos = (hbuf.ring.rpos+1) & 7;
+        for (uint8_t i=0; i<numsubscribers; ++i) {
+            if (subscribers[i].id == ev->service) {
+                subscribers[i].svc->handleEvent (ev->type, ev->id,
+                                                 ev->X.wval,
+                                                 ev->Y, ev->Z);
+                break;
+            }
+        }
+    }
+    else if (timeractive && ((ts=millis()) < timernext)) {
+        for (uint8_t i=0; i<timerclientcount; ++i) {
+            for (uint8_t j=0; j<numsubscribers; ++j) {
+                if (subscribers[j].id == timerclients[i]) {
+                    subscribers[j].svc->handleEvent (TYPE_TIMER,
+                                                     EV_TIMER_TICK,
+                                                     (uint16_t) 0,
+                                                     (uint8_t) 0,
+                                                     (uint8_t) 0);
                 }
             }
         }
-        else if (timeractive && ((ts=millis()) < timernext)) {
-            for (uint8_t i=0; i<timerclientcount; ++i) {
-                sendEvent (TYPE_TIMER, timerclients[i],
-                           EV_TIMER_TICK);
-            }
-            timernext += timerperiod;
-        }
-        else break;
+        while (ts>=timernext) timernext += timerperiod;
     }
 }
 
@@ -105,7 +109,7 @@ volatile Event *EventQueueManager::waitEvent (void) {
                 sendEvent (TYPE_TIMER, timerclients[i],
                            EV_TIMER_TICK);
             }
-            timernext += timerperiod;
+            while (ts>=timernext) timernext += timerperiod;
             continue;
         }
         else {

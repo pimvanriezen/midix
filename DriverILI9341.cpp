@@ -42,11 +42,15 @@ public:
     }
 
     void clearBackground (void) {
-        for (uint16_t i=0; i<24; ++i) {
-            tft->fillRect (0,(235-(5*i)),320,5,inks[0]);
-            EventQueue.yield();
-            tft->fillRect (0,5*i,320,5,inks[0]);
-            EventQueue.yield();
+        for (uint16_t i=0; i<240; ++i) {
+            for (uint16_t x=0; x<320; x+= 80) {
+                digitalWrite (13, HIGH);
+                tft->setAddrWindow (x,i,x+79,i);
+                for (uint16_t z=0; z<80; ++z)  tft->pushColor (inks[0]);
+                digitalWrite (13, LOW);
+                EventQueue.yield();
+                EventQueue.yield();
+            }
         }
     }
     
@@ -118,10 +122,23 @@ public:
         print (txt);
     }
     
-    void drawChar (char c) {
+    void drawChar (char c, bool clear=false) {
         if (c<32) c = ' ';
         else if (c>128) c = ' ';
         if (c == ' ') {
+            if (clear)
+            {
+                tft->setAddrWindow (cursor_x, cursor_y,
+                                    cursor_x+font_height/3,
+                                    cursor_y + font_height-1);
+                
+                for (uint8_t y=0; y<font_height;++y) {
+                    for (uint8_t x=0; x<((font_height/3)+1); ++x) {
+                        tft->pushColor (inks[0]);
+                    }
+                    EventQueue.yield();
+                }
+            }
             cursor_x += font_height/3;
             return;
         }
@@ -133,37 +150,41 @@ public:
         uint8_t c_height = pgm_read_byte (crsr++);
         uint8_t c_width = pgm_read_byte (crsr++);
 
-        tft->setAddrWindow (cursor_x, cursor_y + c_yoffs,
-                            cursor_x + c_width - 1,
+        tft->setAddrWindow (cursor_x, cursor_y,
+                            cursor_x + c_width,
                             cursor_y + c_yoffs + c_height - 1);
 
-        for (uint8_t y=0; y<c_height; ++y) {
+        for (uint8_t y=0; y<c_height+c_yoffs; ++y) {
             for (uint8_t x=0;x<c_width; ++x) {
                 uint8_t pix = 0;
-                switch (bitpos) {
-                    case 0:
-                        pix = (pgm_read_byte(crsr) & 0xc0) >> 6;
-                        break;
+                if (y>=c_yoffs) {
+                    switch (bitpos) {
+                        case 0:
+                            pix = (pgm_read_byte(crsr) & 0xc0) >> 6;
+                            break;
                     
-                    case 2:
-                        pix = (pgm_read_byte(crsr) & 0x30) >> 4;
-                        break;
+                        case 2:
+                            pix = (pgm_read_byte(crsr) & 0x30) >> 4;
+                            break;
                         
-                    case 4:
-                        pix = (pgm_read_byte(crsr) & 0x0c) >> 2;
-                        break;
+                        case 4:
+                            pix = (pgm_read_byte(crsr) & 0x0c) >> 2;
+                            break;
                     
-                    case 6:
-                        pix = (pgm_read_byte(crsr) & 0x03);
-                        break;
-                }
-                bitpos += 2;
-                if (bitpos>7) {
-                    crsr++;
-                    bitpos-=8;
+                        case 6:
+                            pix = (pgm_read_byte(crsr) & 0x03);
+                            break;
+                    }
+                    bitpos += 2;
+                    if (bitpos>7) {
+                        crsr++;
+                        bitpos-=8;
+                    }
                 }
                 tft->pushColor (inks[pix]);
             }
+            tft->pushColor (inks[0]);
+            EventQueue.yield();
         }
         
         cursor_x += c_width+1;
@@ -205,7 +226,7 @@ public:
                 break;
             
             case GFX_DRAWCHAR:
-                drawChar ((char) X&127);
+                drawChar ((char) X&127, Y==1);
                 break;
             
             case GFX_DRAWBOX:

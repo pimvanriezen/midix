@@ -12,13 +12,15 @@
 class Main : public Application
 {
 public:
-                     Main (void) {}
+                     Main (void) { encval=64; }
                     ~Main (void) {}
     
     void             setup (void);
     void             start (void);
     void             handleEvent (eventtype t, eventid id, uint16_t X,
                                   uint8_t Y, uint8_t Z);
+    
+    int              encval;
 };
 
 Main M;
@@ -60,6 +62,16 @@ void Main::start (void) {
     Display.setBackground (0x20, 0x30, 0x50);
     Display.clearBackground();
     Display.backlightOn();
+    Display.setFont (1);
+    Display.setInk (255,255,255);
+    Display.setCursor (5,5);
+    Display.write ("MIDIx 1.0 Ready");
+    Display.setCursor (5, 34);
+    Display.setFont (0);
+    Display.write ("Copyright 2015 Midilab");
+    Display.setFont (1);
+    Display.setCursor (150,110);
+    Display.write (encval);
 }
 
 // --------------------------------------------------------------------------
@@ -68,21 +80,29 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
     switch (id) {
         case EV_INPUT_BUTTON_DOWN:
             Console.write ("Button down\r\n");
-            OutPort.flash (0, 100);
             break;
         
         case EV_INPUT_BUTTON_UP:
             Console.write ("Button up\r\n");
-            OutPort.flash (1, 100);
             break;
             
         case EV_INPUT_ENCODER_LEFT:
             Console.write ("Encoder left\r\n");
+            if (encval) {
+                encval--;
+                Display.setCursor (150,110);
+                Display.write (encval, true);
+            }
             OutPort.flash (0,10);
             break;
 
         case EV_INPUT_ENCODER_RIGHT:
             Console.write ("Encoder right\r\n");
+            if (encval<127) {
+                encval++;
+                Display.setCursor (150,110);
+                Display.write (encval, true);
+            }
             OutPort.flash (1,10);
             break;
     }

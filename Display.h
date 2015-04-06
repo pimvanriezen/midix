@@ -36,6 +36,11 @@ public:
     void             backlightOff (void);
     void             setBackground (uint8_t, uint8_t, uint8_t);
     void             clearBackground (void);
+    void             setInk (uint8_t, uint8_t, uint8_t);
+    void             setCursor (uint16_t, uint8_t);
+    void             setFont (uint8_t);
+    void             write (const char *, bool clear=false);
+    void             write (uint8_t, bool clear=false);
 };
 
 extern DisplayClient Display;
