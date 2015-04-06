@@ -288,6 +288,7 @@ void InPortService::addEncoder (uint16_t id1, uint16_t id2) {
         encoders[i].id2 = id2;
         encoders[i].state = 0;
         encoders[i].prevstate = 0;
+        encoders[i].prevprevstate = 0;
         numencoders++;
     }
 }
@@ -300,13 +301,14 @@ void InPortService::begin (void) {
 // --------------------------------------------------------------------------
 void InPortService::handleEncoder (uint8_t idx) {
     if (encoders[idx].state == 0) {
-        if (encoders[idx].prevstate == 1) {
-            EventQueue.sendEvent (TYPE_REQUEST, outsvc,
-                                  EV_INPUT_ENCODER_RIGHT, idx);
-        }
-        else {
+        if (encoders[idx].prevstate == 1 &&
+            encoders[idx].prevprevstate == 3) {
             EventQueue.sendEvent (TYPE_REQUEST, outsvc,
                                   EV_INPUT_ENCODER_LEFT, idx);
+        }
+        else if (encoders[idx].prevprevstate == 3) {
+            EventQueue.sendEvent (TYPE_REQUEST, outsvc,
+                                  EV_INPUT_ENCODER_RIGHT, idx);
         }
     }
 }
@@ -318,6 +320,7 @@ void InPortService::handleEvent (eventtype tp, eventid id, uint16_t X,
     
     for (i=0; i<numencoders;++i) {
         if (encoders[i].id1 == X) {
+            encoders[i].prevprevstate = encoders[i].prevstate;
             encoders[i].prevstate = encoders[i].state;
             if (Y) encoders[i].state |= 1;
             else encoders[i].state &= 2;
@@ -325,6 +328,7 @@ void InPortService::handleEvent (eventtype tp, eventid id, uint16_t X,
             return;
         }
         else if (encoders[i].id2 == X) {
+            encoders[i].prevprevstate = encoders[i].prevstate;
             encoders[i].prevstate = encoders[i].state;
             if (Y) encoders[i].state |= 2;
             else encoders[i].state &= 1;

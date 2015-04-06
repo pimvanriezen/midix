@@ -101,6 +101,7 @@ struct Encoder {
     uint16_t     id2;
     uint8_t      state:2;
     uint8_t      prevstate:2;
+    uint8_t      prevprevstate:2;
 };
 
 class InPortService : public EventReceiver

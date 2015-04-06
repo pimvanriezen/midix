@@ -33,6 +33,8 @@ void Main::setup (void) {
 
     // Button 0 hangs off GPIO 7 on i2c address 0x21
     InPort.addButton (0x2107);
+    InPort.addEncoder (0x2106, 0x2105);
+    InPort.addButton (0x2104);
 
     // LED 0-1 hang off GPIO 8-9 on i2c address 0x21
     OutPort.add (0x2108);
@@ -59,6 +61,16 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
         case EV_INPUT_BUTTON_UP:
             Console.write ("Button up\r\n");
             OutPort.flash (1, 10);
+            break;
+            
+        case EV_INPUT_ENCODER_LEFT:
+            Console.write ("Encoder left\r\n");
+            OutPort.flash (0,2);
+            break;
+
+        case EV_INPUT_ENCODER_RIGHT:
+            Console.write ("Encoder right\r\n");
+            OutPort.flash (1,2);
             break;
     }
 }
