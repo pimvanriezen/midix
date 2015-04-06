@@ -29,7 +29,7 @@ void setup (void) {
     App->setup ();
     InPort.begin();
     Port.begin();
-    EventQueue.startTimer (10);
+    EventQueue.startTimer (1);
     App->start();
 }
 
