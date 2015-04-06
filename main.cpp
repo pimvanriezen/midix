@@ -3,6 +3,8 @@
 #include "Port.h"
 #include "Console.h"
 #include "Application.h"
+#include "Display.h"
+#include "DriverILI9341.h"
 
 #define SVC_LOOP 0x42
 
@@ -20,6 +22,12 @@ public:
 };
 
 Main M;
+
+#include "helvetica11.h"
+#include "helvetica24.h"
+Font FontList[2] = {{FONT_HELVETICA_11, OFFS_HELVETICA_11, 11},
+                    {FONT_HELVETICA_24, OFFS_HELVETICA_24, 29}};
+Font *Fonts = FontList;
 
 // --------------------------------------------------------------------------
 void Main::setup (void) {
@@ -39,6 +47,8 @@ void Main::setup (void) {
     // LED 0-1 hang off GPIO 8-9 on i2c address 0x21
     OutPort.add (0x2108);
     OutPort.add (0x2109);
+    
+    Display.begin (DriverILI9341::load());
 }
 
 // --------------------------------------------------------------------------
@@ -47,6 +57,9 @@ void Main::start (void) {
     Console.write ("Application started\r\n");
     OutPort.flash (0, 254);
     OutPort.flash (1, 254);
+    Display.setBackground (0x20, 0x30, 0x50);
+    Display.clearBackground();
+    Display.backlightOn();
 }
 
 // --------------------------------------------------------------------------
