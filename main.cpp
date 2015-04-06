@@ -45,8 +45,8 @@ void Main::setup (void) {
 void Main::start (void) {
     // Report the happy news
     Console.write ("Application started\r\n");
-    OutPort.flash (0, 80);
-    OutPort.flash (1, 80);
+    OutPort.flash (0, 254);
+    OutPort.flash (1, 254);
 }
 
 // --------------------------------------------------------------------------
@@ -55,22 +55,22 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
     switch (id) {
         case EV_INPUT_BUTTON_DOWN:
             Console.write ("Button down\r\n");
-            OutPort.flash (0, 10);
+            OutPort.flash (0, 100);
             break;
         
         case EV_INPUT_BUTTON_UP:
             Console.write ("Button up\r\n");
-            OutPort.flash (1, 10);
+            OutPort.flash (1, 100);
             break;
             
         case EV_INPUT_ENCODER_LEFT:
             Console.write ("Encoder left\r\n");
-            OutPort.flash (0,2);
+            OutPort.flash (0,10);
             break;
 
         case EV_INPUT_ENCODER_RIGHT:
             Console.write ("Encoder right\r\n");
-            OutPort.flash (1,2);
+            OutPort.flash (1,10);
             break;
     }
 }
