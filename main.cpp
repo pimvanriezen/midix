@@ -12,7 +12,7 @@
 class Main : public Application
 {
 public:
-                     Main (void) { encval=64; }
+                     Main (void) { encval[0] = encval[1] = 64;}
                     ~Main (void) {}
     
     void             setup (void);
@@ -20,7 +20,7 @@ public:
     void             handleEvent (eventtype t, eventid id, uint16_t X,
                                   uint8_t Y, uint8_t Z);
     
-    int              encval;
+    uint8_t          encval[2];
 };
 
 Main M;
@@ -41,14 +41,17 @@ void Main::setup (void) {
     // events end up in the main loop.
     InPort.setReceiver (SVC_LOOP);
 
-    // Button 0 hangs off GPIO 7 on i2c address 0x21
-    InPort.addButton (0x2107);
-    InPort.addEncoder (0x2106, 0x2105);
-    InPort.addButton (0x2104);
-
-    // LED 0-1 hang off GPIO 8-9 on i2c address 0x21
-    OutPort.add (0x2108);
-    OutPort.add (0x2109);
+    // Two encoders, hanging off pins 3&4 and 2&5 respectively
+    InPort.addEncoder (0x2103, 0x2104);
+    InPort.addEncoder (0x2102, 0x2105);
+    
+    // And their respective push button functions
+    InPort.addButton (0x2106);
+    InPort.addButton (0x2101);
+    
+    // LED 0-1 hang off GPIO pins 0 and 7 on i2c address 0x21
+    OutPort.add (0x2100);
+    OutPort.add (0x2107);
     
     Display.begin (DriverILI9341::load());
 }
@@ -57,8 +60,8 @@ void Main::setup (void) {
 void Main::start (void) {
     // Report the happy news
     Console.write ("Application started\r\n");
-    OutPort.flash (0, 254);
-    OutPort.flash (1, 254);
+    OutPort.flash (0, 100);
+    OutPort.flash (1, 100);
     Display.setBackground (0x20, 0x30, 0x50);
     Display.clearBackground();
     Display.backlightOn();
@@ -70,8 +73,10 @@ void Main::start (void) {
     Display.setFont (0);
     Display.write ("Copyright 2015 Midilab");
     Display.setFont (1);
-    Display.setCursor (150,110);
-    Display.write (encval);
+    for (uint8_t X=0; X<2; ++X) {
+        Display.setCursor (150,100+30*X);
+        Display.write (encval[X], true);
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -80,6 +85,9 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
     switch (id) {
         case EV_INPUT_BUTTON_DOWN:
             Console.write ("Button down\r\n");
+            encval[X]=64;
+            Display.setCursor (150,100+30*X);
+            Display.write (encval[X], true);
             break;
         
         case EV_INPUT_BUTTON_UP:
@@ -88,20 +96,20 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
             
         case EV_INPUT_ENCODER_LEFT:
             Console.write ("Encoder left\r\n");
-            if (encval) {
-                encval--;
-                Display.setCursor (150,110);
-                Display.write (encval, true);
+            if (encval[X]) {
+                encval[X]--;
+                Display.setCursor (150,100+30*X);
+                Display.write (encval[X], true);
             }
             OutPort.flash (0,10);
             break;
 
         case EV_INPUT_ENCODER_RIGHT:
             Console.write ("Encoder right\r\n");
-            if (encval<127) {
-                encval++;
-                Display.setCursor (150,110);
-                Display.write (encval, true);
+            if (encval[X]<127) {
+                encval[X]++;
+                Display.setCursor (150,100+30*X);
+                Display.write (encval[X], true);
             }
             OutPort.flash (1,10);
             break;
