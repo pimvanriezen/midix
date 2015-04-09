@@ -12,7 +12,10 @@
 class Main : public Application
 {
 public:
-                     Main (void) { encval[0] = encval[1] = 64;}
+                     Main (void) {
+                        encval[0] = encval[1] = 64;
+                        oldval[0] = oldval[1] = 0;
+                    }
                     ~Main (void) {}
     
     void             setup (void);
@@ -21,6 +24,7 @@ public:
                                   uint8_t Y, uint8_t Z);
     
     uint8_t          encval[2];
+    uint8_t          oldval[2];
 };
 
 Main M;
@@ -77,17 +81,31 @@ void Main::start (void) {
         Display.setCursor (150,100+30*X);
         Display.write (encval[X], true);
     }
+    
+    EventQueue.subscribeTimer (SVC_LOOP);
 }
 
 // --------------------------------------------------------------------------
 void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                                uint8_t Y, uint8_t Z) {
     switch (id) {
+        case EV_TIMER_TICK:
+            if (EventQueue.ts & 31) return;
+            if (oldval[0] != encval[0]) {
+                Display.setCursor (150,100);
+                Display.write (encval[0], true);
+                oldval[0] = encval[0];
+            }
+            if (oldval[1] != encval[1]) {
+                Display.setCursor (150,130);
+                Display.write (encval[1], true);
+                oldval[1] = encval[1];
+            }
+            return;
+            
         case EV_INPUT_BUTTON_DOWN:
             Console.write ("Button down\r\n");
             encval[X]=64;
-            Display.setCursor (150,100+30*X);
-            Display.write (encval[X], true);
             break;
         
         case EV_INPUT_BUTTON_UP:
@@ -95,21 +113,15 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
             break;
             
         case EV_INPUT_ENCODER_LEFT:
-            Console.write ("Encoder left\r\n");
             if (encval[X]) {
                 encval[X]--;
-                Display.setCursor (150,100+30*X);
-                Display.write (encval[X], true);
             }
             OutPort.flash (0,10);
             break;
 
         case EV_INPUT_ENCODER_RIGHT:
-            Console.write ("Encoder right\r\n");
             if (encval[X]<127) {
                 encval[X]++;
-                Display.setCursor (150,100+30*X);
-                Display.write (encval[X], true);
             }
             OutPort.flash (1,10);
             break;

@@ -184,7 +184,7 @@ public:
                 tft->pushColor (inks[pix]);
             }
             tft->pushColor (inks[0]);
-            EventQueue.yield();
+            if (!(y&3)) EventQueue.yield();
         }
         
         cursor_x += c_width+1;
@@ -193,6 +193,9 @@ public:
     void handleEvent (eventtype tp, eventid id, uint16_t X,
                       uint8_t Y, uint8_t Z) {
         digitalWrite (13, HIGH);
+        char xstr[2];
+        xstr[0] = X&127;
+        xstr[1] = 0;
         monoduo xx;
         xx.wval = X;
         switch (id) {
