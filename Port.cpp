@@ -229,7 +229,7 @@ void PortService::handleEvent (eventtype tp, eventid id, uint16_t X,
                 break;
             
             case EV_TIMER_TICK:
-                ports[i]->decreaseTimers();
+                if (! (tick & 7)) ports[i]->decreaseTimers();
                 
                 // Do pre-emptive polling in case we missed an
                 // interrupt.
