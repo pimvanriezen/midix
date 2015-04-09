@@ -152,12 +152,12 @@ public:
 
         tft->setAddrWindow (cursor_x, cursor_y,
                             cursor_x + c_width,
-                            cursor_y + c_yoffs + c_height - 1);
+                            cursor_y + font_height - 1);
 
-        for (uint8_t y=0; y<c_height+c_yoffs; ++y) {
+        for (uint8_t y=0; y<font_height; ++y) {
             for (uint8_t x=0;x<c_width; ++x) {
                 uint8_t pix = 0;
-                if (y>=c_yoffs) {
+                if (y>=c_yoffs && y<(c_height+c_yoffs)) {
                     switch (bitpos) {
                         case 0:
                             pix = (pgm_read_byte(crsr) & 0xc0) >> 6;
