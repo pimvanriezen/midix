@@ -50,10 +50,11 @@ void DisplayClient::write (const char *str, bool clear) {
 
 void DisplayClient::write (uint8_t i, bool clear) {
     char c[5];
-    c[0] = '0' + i/100;
-    c[1] = '0' + (i%100)/10;
-    c[2] = '0' + (i%10);
-    c[3] = ' ';
+    uint8_t cpos = 0;
+    if (i>99) c[cpos++] = '0' + i/100;
+    if (i>9) c[cpos++] = '0' + (i%100)/10;
+    c[cpos++] = '0' + i%10;
+    while (cpos<4) c[cpos++] = ' ';
     c[4] = 0;
     write (c, clear);
 }
