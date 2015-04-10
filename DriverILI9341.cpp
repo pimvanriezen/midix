@@ -43,10 +43,10 @@ public:
 
     void clearBackground (void) {
         for (uint16_t i=0; i<240; ++i) {
-            for (uint16_t x=0; x<320; x+= 80) {
+            for (uint16_t x=0; x<320; x+= 160) {
                 digitalWrite (13, HIGH);
-                tft->setAddrWindow (x,i,x+79,i);
-                for (uint16_t z=0; z<80; ++z)  tft->pushColor (inks[0]);
+                tft->setAddrWindow (x,i,x+159,i);
+                tft->pushColor (inks[0], 160);
                 digitalWrite (13, LOW);
                 EventQueue.yield();
                 EventQueue.yield();
@@ -184,7 +184,7 @@ public:
                 tft->pushColor (inks[pix]);
             }
             tft->pushColor (inks[0]);
-            if (!(y&3)) EventQueue.yield();
+            EventQueue.yield();
         }
         
         cursor_x += c_width+1;

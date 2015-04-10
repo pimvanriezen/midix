@@ -9,6 +9,7 @@
 PortBus::PortBus (uint8_t id) {
     i2cid = id;
     pinmodes = 0;
+    activeTimers = 0;
     for (uint8_t i=0; i<16; ++i) pinvalues[i] = 0;
 }
 
@@ -48,6 +49,8 @@ uint8_t PortBus::pinValue (uint8_t pin) {
 void PortBus::pinOut (uint8_t pin, uint8_t tval) {
     if (pinmodes & (1<<(pin&15))) return;
     
+    if (tval && tval<255) activeTimers++;
+    
     pinvalues[pin&15] = tval;
     if (pin>7) {
         uint8_t bt = (pinvalues[8] ? 1 : 0) |
@@ -75,12 +78,14 @@ void PortBus::pinOut (uint8_t pin, uint8_t tval) {
 
 // --------------------------------------------------------------------------
 void PortBus::decreaseTimers (void) {
+    if (! activeTimers) return;
     bool changed_low = false;
     bool changed_high = false;
     for (uint8_t i=0; i<16; ++i) {
         if (pinvalues[i] && pinvalues[i]<255) {
             pinvalues[i]--;
             if (pinvalues[i] == 0) {
+                activeTimers--;
                 if (i<8) changed_low = true;
                 else changed_high = true;
             }
@@ -155,7 +160,6 @@ void portInterruptBank1 (void) {
 // CLASS PortService
 // ==========================================================================
 PortService::PortService (void) {
-    tick = 0;
 }
 
 // --------------------------------------------------------------------------
@@ -221,7 +225,6 @@ void PortService::pinOut (uint16_t id, uint8_t timeval) {
 // --------------------------------------------------------------------------
 void PortService::handleEvent (eventtype tp, eventid id, uint16_t X,
                                uint8_t Y, uint8_t Z) {
-    if (id == EV_TIMER_TICK) tick++;
     for (uint8_t i=0; i<numports; ++i) {
         switch (id) {
             case EV_PORT_IRQ:
@@ -229,12 +232,14 @@ void PortService::handleEvent (eventtype tp, eventid id, uint16_t X,
                 break;
             
             case EV_TIMER_TICK:
-                if (! (tick & 7)) ports[i]->decreaseTimers();
+                if (! (EventQueue.ts & 7)) ports[i]->decreaseTimers();
                 
                 // Do pre-emptive polling in case we missed an
                 // interrupt.
-                if (! (tick & 63)) ports[i]->handleInterrupt (0);
-                else if ((tick&63) == 32) ports[i]->handleInterrupt (1);
+                if (! (EventQueue.ts & 63)) ports[i]->handleInterrupt (0);
+                else if ((EventQueue.ts&63) == 32) {
+                    ports[i]->handleInterrupt (1);
+                }
                 break;
         }
     }

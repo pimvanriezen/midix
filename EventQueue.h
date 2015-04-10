@@ -123,6 +123,7 @@ public:
     void                 startTimer (uint16_t p);
 
     unsigned long        ts; ///< Current time (if timer enabled).
+    uint16_t             missedTicks; 
     
 protected:
     HighPriorityBuffer   hbuf; ///< High prio ringbuffer

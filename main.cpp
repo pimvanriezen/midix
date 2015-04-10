@@ -5,6 +5,14 @@
 #include "Application.h"
 #include "Display.h"
 #include "DriverILI9341.h"
+#include <avr/io.h>
+
+/* RegDef:  External Memory Control Register A */
+#define XMCRA _SFR_MEM8(0x74)
+
+/* RegDef:  External Memory Control Register A */
+#define XMCRB _SFR_MEM8(0x75)
+
 
 #define SVC_LOOP 0x42
 
@@ -15,6 +23,7 @@ public:
                      Main (void) {
                         encval[0] = encval[1] = 64;
                         oldval[0] = oldval[1] = 0;
+                        missed = 255;
                     }
                     ~Main (void) {}
     
@@ -25,6 +34,7 @@ public:
     
     uint8_t          encval[2];
     uint8_t          oldval[2];
+    uint16_t         missed;
 };
 
 Main M;
@@ -58,14 +68,66 @@ void Main::setup (void) {
     OutPort.add (0x2107);
     
     Display.begin (DriverILI9341::load());
+    
+    XMCRB=1;
+    XMCRA= 0x85;
+    
+    volatile uint8_t *ptr = (volatile uint8_t *) 0x2200;
+    
+    *ptr = 0x55;
+    
+    while (ptr < (uint8_t *) 0xA200) {
+        *ptr++ = 0x55;
+    }
+    ptr = (uint8_t *) 0x2200;
+    while (ptr < (uint8_t *) 0xA200) {
+        if (*ptr == 0x55) {
+            ptr++;
+            continue;
+        }
+        if ((*ptr) != 0x55) {
+            Serial.print ("!");
+            Serial.print ((uint16_t) ptr, HEX);
+            Serial.print (":");
+            Serial.print (*ptr, HEX);
+        }
+        ptr++;
+    }
+    
+    ptr = (uint8_t *) 0x2200;
+
+    while (ptr < (uint8_t *) 0xA200) {
+        *ptr++ = 0xaa;
+    }
+    ptr = (uint8_t *) 0x2200;
+
+    while (ptr < (uint8_t *) 0xA200) {
+        *ptr++ = 0xaa;
+    }
+    ptr = (uint8_t *) 0x2200;
+    while (ptr < (uint8_t *) 0xA200) {
+        if (*ptr == 0xaa) {
+            ptr++;
+            continue;
+        }
+        if ((*ptr) != 0xaa) {
+            Serial.print ("!");
+            Serial.print ((uint16_t) ptr, HEX);
+            Serial.print (":");
+            Serial.print (*ptr, HEX);
+        }
+        ptr++;
+    }
+
+    Serial.println (*ptr, HEX);
 }
 
 // --------------------------------------------------------------------------
 void Main::start (void) {
     // Report the happy news
     Console.write ("Application started\r\n");
-    OutPort.flash (0, 100);
-    OutPort.flash (1, 100);
+    OutPort.flash (0, 2);
+    OutPort.flash (1, 2);
     Display.setBackground (0x20, 0x30, 0x50);
     Display.clearBackground();
     Display.backlightOn();
@@ -101,6 +163,13 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                 Display.write (encval[1], true);
                 oldval[1] = encval[1];
             }
+            if (missed != EventQueue.missedTicks) {
+                Display.setCursor (5,200);
+                Display.setFont (0);
+                Display.write (EventQueue.missedTicks>>8);
+                Display.setFont (1);
+                missed = EventQueue.missedTicks;
+            }
             return;
             
         case EV_INPUT_BUTTON_DOWN:
@@ -116,14 +185,14 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
             if (encval[X]) {
                 encval[X]--;
             }
-            OutPort.flash (0,10);
+            OutPort.flash (0,1);
             break;
 
         case EV_INPUT_ENCODER_RIGHT:
             if (encval[X]<127) {
                 encval[X]++;
             }
-            OutPort.flash (1,10);
+            OutPort.flash (1,1);
             break;
     }
 }

@@ -5,6 +5,7 @@
 // CLASS EventQueueManager
 // ==========================================================================
 EventQueueManager::EventQueueManager (void) {
+    missedTicks = 0;
     numsubscribers = 0;
     lbuf.ring.wpos = lbuf.ring.rpos = 0;
     hbuf.ring.wpos = hbuf.ring.rpos = 0;
@@ -84,7 +85,12 @@ void EventQueueManager::yield (void) {
                 }
             }
         }
-        while (ts>=timernext) timernext += timerperiod;
+        timernext += timerperiod;
+        if (ts>=timernext) timernext += timerperiod;
+        while (ts>=timernext) {
+            timernext += timerperiod;
+            missedTicks++;
+        }
     }
 }
 
@@ -109,7 +115,12 @@ volatile Event *EventQueueManager::waitEvent (void) {
                 sendEvent (TYPE_TIMER, timerclients[i],
                            EV_TIMER_TICK);
             }
-            while (ts>=timernext) timernext += timerperiod;
+            timernext += timerperiod;
+           if (ts>=timernext) timernext += timerperiod;
+           while (ts>=timernext) {
+                timernext += timerperiod;
+                missedTicks++;
+            }
             continue;
         }
         else {

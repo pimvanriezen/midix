@@ -60,6 +60,7 @@ public:
 protected:
     uint8_t      pinvalues[16]; /// Current values
     uint16_t     pinmodes; /// Current in/out modes.
+    uint8_t      activeTimers; /// Number of active timers
 };
 
 /// A service combining several Port Extenders and physical arduino
@@ -85,7 +86,6 @@ protected:
     PortBus     *findPortBus (uint8_t i2cid);
     PortBus     *ports[8];
     uint8_t      numports;
-    uint8_t      tick;
 };
 
 extern PortService Port;
