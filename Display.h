@@ -41,6 +41,7 @@ public:
     void             setFont (uint8_t);
     void             write (const char *, bool clear=false);
     void             write (uint8_t, bool clear=false);
+    void             write (uint16_t, bool clear=false);
 };
 
 extern DisplayClient Display;

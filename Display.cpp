@@ -59,4 +59,34 @@ void DisplayClient::write (uint8_t i, bool clear) {
     write (c, clear);
 }
 
+void DisplayClient::write (uint16_t val, bool clear) {
+    uint16_t rest, v;
+    uint8_t cpos = 0;
+    char c[10];
+    rest = val;
+    
+    v = rest/10000;
+    c[cpos++] = '0' + v;
+    rest = rest % 10000;
+    
+    v = rest/1000;
+    c[cpos++] = '0' + v;
+    rest = rest % 1000;
+    
+    v = rest/100;
+    c[cpos++] = '0' + v;
+    rest = rest % 100;
+    
+    v = rest/10;
+    c[cpos++] = '0' + v;
+    rest = rest % 10;
+    
+    c[cpos++] = '0' + rest;
+    while (cpos<9) c[cpos++] = ' ';
+    c[cpos] = 0;
+    cpos = 0;
+    while (c[cpos] == '0') cpos++;
+    write (c+cpos, clear);
+}
+
 DisplayClient Display;

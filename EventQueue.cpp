@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "EventQueue.h"
+#include "Debug.h"
 
 // ==========================================================================
 // CLASS EventQueueManager
@@ -22,8 +23,13 @@ EventQueueManager::EventQueueManager (void) {
         hbuf.ring.rbuf[i].Y = lbuf.ring.rbuf[i].Z = 0;
     }
     timeractive = false;
-    pinMode (13, OUTPUT);
-    digitalWrite (13, LOW);
+
+    pinMode (PIN_DEBUG_1, OUTPUT);
+    pinMode (PIN_DEBUG_2, OUTPUT);
+    pinMode (PIN_DEBUG_3, OUTPUT);
+    digitalWrite (PIN_DEBUG_1, LOW);
+    digitalWrite (PIN_DEBUG_2, LOW);
+    digitalWrite (PIN_DEBUG_3, LOW);
 }
 
 // --------------------------------------------------------------------------
@@ -61,27 +67,32 @@ void EventQueueManager::sendEvent (eventtype tp, serviceid svc, eventid id,
 
 // --------------------------------------------------------------------------
 void EventQueueManager::yield (void) {
+    DBG_ENTER(0);
     if (hbuf.ring.rpos != hbuf.ring.wpos) {
         volatile Event *ev = &hbuf.ring.rbuf[hbuf.ring.rpos];
         hbuf.ring.rpos = (hbuf.ring.rpos+1) & 7;
         for (uint8_t i=0; i<numsubscribers; ++i) {
             if (subscribers[i].id == ev->service) {
+                DBG_LEAVE(0);
                 subscribers[i].svc->handleEvent (ev->type, ev->id,
                                                  ev->X.wval,
                                                  ev->Y, ev->Z);
+                DBG_ENTER(0);
                 break;
             }
         }
     }
-    else if (timeractive && ((ts=millis()) < timernext)) {
+    if (timeractive && ((ts=millis()) >= timernext)) {
         for (uint8_t i=0; i<timerclientcount; ++i) {
             for (uint8_t j=0; j<numsubscribers; ++j) {
                 if (subscribers[j].id == timerclients[i]) {
+                    DBG_LEAVE(0);
                     subscribers[j].svc->handleEvent (TYPE_TIMER,
                                                      EV_TIMER_TICK,
                                                      (uint16_t) 0,
                                                      (uint8_t) 0,
                                                      (uint8_t) 0);
+                    DBG_ENTER(0);
                 }
             }
         }
@@ -92,6 +103,7 @@ void EventQueueManager::yield (void) {
             missedTicks++;
         }
     }
+    DBG_LEAVE(0);
 }
 
 // --------------------------------------------------------------------------
@@ -104,6 +116,7 @@ volatile Event *EventQueueManager::waitEvent (void) {
                lbuf.ring.rpos == lbuf.ring.wpos) {
         }
         
+        DBG_ENTER(0);
         //digitalWrite (13, HIGH);
         volatile Event *ev;
         if (hbuf.ring.rpos != hbuf.ring.wpos) {
@@ -111,16 +124,19 @@ volatile Event *EventQueueManager::waitEvent (void) {
             hbuf.ring.rpos = (hbuf.ring.rpos+1) & 7;
         }
         else if (ts >= timernext) {
+            DBG_ENTER(1);
             for (i=0; i<timerclientcount; ++i) {
                 sendEvent (TYPE_TIMER, timerclients[i],
                            EV_TIMER_TICK);
             }
             timernext += timerperiod;
-           if (ts>=timernext) timernext += timerperiod;
-           while (ts>=timernext) {
+            if (ts>=timernext) timernext += timerperiod;
+            while (ts>=timernext) {
                 timernext += timerperiod;
                 missedTicks++;
             }
+            DBG_LEAVE(1);
+            DBG_LEAVE(0);
             continue;
         }
         else {
@@ -130,14 +146,21 @@ volatile Event *EventQueueManager::waitEvent (void) {
         matched = false;
         for (i=0; i<numsubscribers; ++i) {
             if (subscribers[i].id == ev->service) {
+                DBG_LEAVE(0);
+                DBG_ENTER(2);
                 subscribers[i].svc->handleEvent (ev->type, ev->id,
                                                  ev->X.wval,
                                                  ev->Y, ev->Z);
                 matched = true;
+                DBG_LEAVE(2);
+                DBG_ENTER(0);
                 break;
             }
         }
-        if (! matched) return ev;
+        if (! matched) {
+            DBG_LEAVE(0);
+            return ev;
+        }
     }
 }
 

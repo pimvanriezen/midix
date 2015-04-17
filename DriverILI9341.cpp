@@ -14,7 +14,7 @@ public:
     MXScreen (Adafruit_ILI9341 *t) {
         tft = t;
         tft->begin();
-        tft->setRotation (3);
+        tft->setRotation (1);
         cursor_x = 0;
         cursor_y = 0;
         pinMode (PIN_BACKLIGHT, OUTPUT);
@@ -43,19 +43,22 @@ public:
 
     void clearBackground (void) {
         for (uint16_t i=0; i<240; ++i) {
-            for (uint16_t x=0; x<320; x+= 160) {
-                digitalWrite (13, HIGH);
-                tft->setAddrWindow (x,i,x+159,i);
-                tft->pushColor (inks[0], 160);
-                digitalWrite (13, LOW);
+            for (uint16_t x=0; x<320; x+= 40) {
+                tft->setAddrWindow (x,i,x+39,i);
                 EventQueue.yield();
+                tft->pushColor (inks[0], 40);
                 EventQueue.yield();
             }
         }
     }
     
     void fillRect (uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-        tft->fillRect (x,y,w,h,inks[0]);
+        for (uint16_t yy=y; yy<y+h; ++yy) {
+            tft->setAddrWindow (x,yy,x+w-1,yy);
+            EventQueue.yield();
+            tft->pushColor (inks[0], w);
+            EventQueue.yield();
+        }
     }
     
     void setInk (uint8_t r, uint8_t g, uint8_t b) {
@@ -192,7 +195,6 @@ public:
     
     void handleEvent (eventtype tp, eventid id, uint16_t X,
                       uint8_t Y, uint8_t Z) {
-        digitalWrite (13, HIGH);
         char xstr[2];
         xstr[0] = X&127;
         xstr[1] = 0;
@@ -243,7 +245,6 @@ public:
             default:
                 break;
         }
-        digitalWrite (13, LOW);
     }
 
 protected:

@@ -1,4 +1,4 @@
-#include <Arduino.h>
+ #include <Arduino.h>
 #include "EventQueue.h"
 #include "Port.h"
 #include "Console.h"
@@ -69,8 +69,9 @@ void Main::setup (void) {
     
     Display.begin (DriverILI9341::load());
     
+    /*
     XMCRB=1;
-    XMCRA= 0x85;
+    XMCRA= 0x80;
     
     volatile uint8_t *ptr = (volatile uint8_t *) 0x2200;
     
@@ -94,7 +95,7 @@ void Main::setup (void) {
         ptr++;
     }
     
-    ptr = (uint8_t *) 0x2200;
+    ptr = (volatile uint8_t *) 0x2200;
 
     while (ptr < (uint8_t *) 0xA200) {
         *ptr++ = 0xaa;
@@ -119,7 +120,7 @@ void Main::setup (void) {
         ptr++;
     }
 
-    Serial.println (*ptr, HEX);
+    Serial.println (*ptr, HEX); */
 }
 
 // --------------------------------------------------------------------------
@@ -131,6 +132,8 @@ void Main::start (void) {
     Display.setBackground (0x20, 0x30, 0x50);
     Display.clearBackground();
     Display.backlightOn();
+//    Display.setBackground (0xff, 0xff, 0xff);
+//    Display.setInk (0,0,0);
     Display.setFont (1);
     Display.setInk (255,255,255);
     Display.setCursor (5,5);
@@ -139,11 +142,6 @@ void Main::start (void) {
     Display.setFont (0);
     Display.write ("Copyright 2015 Midilab");
     Display.setFont (1);
-    for (uint8_t X=0; X<2; ++X) {
-        Display.setCursor (150,100+30*X);
-        Display.write (encval[X], true);
-    }
-    
     EventQueue.subscribeTimer (SVC_LOOP);
 }
 
@@ -152,7 +150,7 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                                uint8_t Y, uint8_t Z) {
     switch (id) {
         case EV_TIMER_TICK:
-            if (EventQueue.ts & 31) return;
+            if (EventQueue.ts & 7) return;
             if (oldval[0] != encval[0]) {
                 Display.setCursor (150,100);
                 Display.write (encval[0], true);
@@ -164,9 +162,10 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                 oldval[1] = encval[1];
             }
             if (missed != EventQueue.missedTicks) {
-                Display.setCursor (5,200);
+                Display.setCursor (5,225);
                 Display.setFont (0);
-                Display.write (EventQueue.missedTicks>>8);
+                Display.write ("miss: ");
+                Display.write (EventQueue.missedTicks);
                 Display.setFont (1);
                 missed = EventQueue.missedTicks;
             }
@@ -179,6 +178,7 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
         
         case EV_INPUT_BUTTON_UP:
             Console.write ("Button up\r\n");
+            
             break;
             
         case EV_INPUT_ENCODER_LEFT:
