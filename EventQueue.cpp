@@ -107,11 +107,11 @@ void EventQueueManager::yield (void) {
 }
 
 // --------------------------------------------------------------------------
-volatile Event *EventQueueManager::waitEvent (void) {
+volatile Event *EventQueueManager::waitEvent (bool forever) {
     uint8_t i;
     bool matched;
-    while (1) {
-        while (hbuf.ring.rpos == hbuf.ring.wpos &&
+    while (forever) {
+        while (forever && hbuf.ring.rpos == hbuf.ring.wpos &&
                ((! timeractive) || ((ts=millis()) < timernext)) &&
                lbuf.ring.rpos == lbuf.ring.wpos) {
         }
@@ -139,9 +139,13 @@ volatile Event *EventQueueManager::waitEvent (void) {
             DBG_LEAVE(0);
             continue;
         }
-        else {
+        else if (lbuf.ring.rpos != lbuf.ring.wpos) {
             ev = &lbuf.ring.rbuf[lbuf.ring.rpos];
             lbuf.ring.rpos = (lbuf.ring.rpos+1) & (SZ_LOBUF-1);
+        }
+        else {
+            if (forever) continue;
+            return NULL;
         }
         matched = false;
         for (i=0; i<numsubscribers; ++i) {
@@ -162,6 +166,7 @@ volatile Event *EventQueueManager::waitEvent (void) {
             return ev;
         }
     }
+    return NULL;
 }
 
 // --------------------------------------------------------------------------

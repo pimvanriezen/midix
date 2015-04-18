@@ -101,7 +101,8 @@ public:
                          /// Handle events of any priority. If any
                          /// unhandled event falls through the
                          /// cracks, it is returned.
-    volatile Event      *waitEvent (void);
+                         /// \param forever If true, 
+    volatile Event      *waitEvent (bool forever = true);
     
                          /// Send an event.
                          /// \param tp The 2 bit event type.

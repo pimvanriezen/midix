@@ -26,6 +26,7 @@ public:
                         oldval[0] = oldval[1] = 0;
                         missed = 255;
                         fmem = 0;
+                        
                     }
                     ~Main (void) {}
     
@@ -71,15 +72,6 @@ void Main::setup (void) {
     OutPort.add (0x2107);
     
     Display.begin (DriverILI9341::load());
-    
-    Console.write ("Testing external RAM...");
-    
-    if (Memory.initializeExternalRAM (0x8000)) {
-        Console.write (" PASS\r\n");
-    }
-    else {
-        Console.write (" FAIL\r\n");
-    }
 }
 
 // --------------------------------------------------------------------------

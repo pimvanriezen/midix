@@ -4,7 +4,7 @@
 class MemoryController
 {
 public:
-    bool initializeExternalRAM (uint16_t sz);
+    void scanForRAM (void);
     uint16_t available (void);
 };
 

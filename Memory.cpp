@@ -4,38 +4,54 @@
 
 extern unsigned int __bss_end;
 
-bool MemoryController::initializeExternalRAM (uint16_t sz) {
+void MemoryController::scanForRAM (void) {
     XMCRB=1;
     XMCRA= 0x80;
     
-    volatile uint8_t *ptr = (volatile uint8_t *) 0x2200;
+    volatile uint8_t *ptr;
+    volatile uint8_t *endptr = (uint8_t *) 0xff00;
+    uint8_t pattern;
+    uint8_t start = 0;
+    bool retry = false;
     
-    *ptr = 0x55;
+    Serial.write ("Testing memory ");
     
-    while (ptr < (uint8_t *) (0x2200+sz)) {
-        *ptr++ = 0x55;
-    }
+    do {
+        pattern = start;
+        ptr = (uint8_t *) 0x2200;
+        do {
+            *ptr = pattern ^ (((uint16_t) ptr) >> 8);
+            ptr++;
+            pattern++;
+        } while (ptr != (endptr+0xff));
 
-    ptr = (uint8_t *) 0x2200;
-    while (ptr < (uint8_t *) (0x2200+sz)) {
-        if ((*ptr) != 0x55) return false;
-        ptr++;
-    }
-    
-    ptr = (volatile uint8_t *) 0x2200;
-    while (ptr < (uint8_t *) (0x2200+sz)) {
-        *ptr++ = 0xaa;
-    }
+        pattern = start;
+        ptr = (uint8_t *) 0x2200;
+        retry = false;
+        do {
+            if ((*ptr) != (pattern ^ (((uint16_t) ptr) >> 8))) {
+                endptr = endptr - 256;
+                retry = true;
+                break;
+            }
+            pattern++;
+            ptr++;
+            if (((uint16_t)ptr & 255) == 0) {
+            }
+        } while (ptr != (endptr+0xff));
+        
+        if (! start) {
+            Serial.write ("\rTesting memory ");
+            Serial.print ((uint16_t)endptr - 0x100);
+            Serial.write (" bytes ");
+            Serial.write (8);
+        }
+        if (! retry) start += 37;
+    } while (retry || start > 36);
 
-    ptr = (uint8_t *) 0x2200;
-    while (ptr < (uint8_t *) (0x2200+sz)) {
-        if ((*ptr) != 0xaa) return false;
-        ptr++;
-    }
-
-    __malloc_heap_end = (char*) ptr;
-    __bss_end = (unsigned int) ptr;
-    return true;
+    Serial.println ("\r\nMemory test done");
+    __malloc_heap_end = (char*) (endptr + 0xff);
+    __bss_end = (unsigned int) (endptr + 0xff);
 }
 
 uint16_t MemoryController::available (void) {

@@ -3,6 +3,7 @@
 #include "I2C.h"
 #include "Port.h"
 #include "EventQueue.h"
+#include "Memory.h"
 
 Application::Application (void) {
     App = this;
@@ -24,6 +25,13 @@ void Application::handleEvent (eventtype tp, eventid id, uint16_t X,
 Application *App;
 
 void setup (void) {
+    Serial.begin (115200);
+    Serial.write (27);
+    Serial.write ("[2J");
+    Serial.write (27);
+    Serial.write ("[HMIDIx 0.1\r\n---------------------------------------"
+                  "-------------------------------------\r\n");
+    Memory.scanForRAM();
     I2C.begin ();
     Console.begin ();
     App->setup ();

@@ -8,8 +8,6 @@ ConsoleService::~ConsoleService (void) {
 }
 
 void ConsoleService::begin (void) {
-    Serial.begin (115200);
-    Serial.println ("");
     Serial.println ("MIDIx console active\n");
     EventQueue.subscribe (SVC_CONSOLE, this);
 }
