@@ -65,18 +65,21 @@ struct RingBuffer
     volatile Event       rbuf[0];
 };
 
+#define SZ_HIBUF 8
+#define SZ_LOBUF 128
+
 /// Storage spec for the high priority buffer (8 entries).
 union HighPriorityBuffer
 {
     RingBuffer           ring;
-    char                 storage[sizeof(RingBuffer)+8*sizeof(Event)];
+    char                 storage[sizeof(RingBuffer)+SZ_HIBUF*sizeof(Event)];
 };
 
 /// Storage spec for the low priority buffer (64 entries).
 union LowPriorityBuffer
 {
     RingBuffer           ring;
-    char                 storage[sizeof(RingBuffer)+64*sizeof(Event)];
+    char                 storage[sizeof(RingBuffer)+SZ_LOBUF*sizeof(Event)];
 };
 
 /// Basic event pump that can also emit timer of its own volition.

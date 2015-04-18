@@ -10,13 +10,13 @@ EventQueueManager::EventQueueManager (void) {
     numsubscribers = 0;
     lbuf.ring.wpos = lbuf.ring.rpos = 0;
     hbuf.ring.wpos = hbuf.ring.rpos = 0;
-    for (uint8_t i=0; i<64; ++i) {
+    for (uint8_t i=0; i<SZ_LOBUF; ++i) {
         lbuf.ring.rbuf[i].type = TYPE_NONE;
         lbuf.ring.rbuf[i].id = 0;
         lbuf.ring.rbuf[i].X.wval = 0;
         lbuf.ring.rbuf[i].Y = lbuf.ring.rbuf[i].Z = 0;
     }
-    for (uint8_t i=0; i<8; ++i) {
+    for (uint8_t i=0; i<SZ_HIBUF; ++i) {
         hbuf.ring.rbuf[i].type = TYPE_NONE;
         hbuf.ring.rbuf[i].id = 0;
         hbuf.ring.rbuf[i].X.wval = 0;
@@ -42,7 +42,7 @@ void EventQueueManager::sendEvent (eventtype tp, serviceid svc, eventid id,
     if (tp == TYPE_REQUEST) {
         cli();
         uint8_t wpos = lbuf.ring.wpos;
-        lbuf.ring.wpos = (lbuf.ring.wpos+1) & 63;
+        lbuf.ring.wpos = (lbuf.ring.wpos+1) & (SZ_LOBUF-1);
         sei();
         lbuf.ring.rbuf[wpos].type = tp;
         lbuf.ring.rbuf[wpos].service = svc;
@@ -54,7 +54,7 @@ void EventQueueManager::sendEvent (eventtype tp, serviceid svc, eventid id,
     else {
         cli();
         uint8_t wpos = hbuf.ring.wpos;
-        hbuf.ring.wpos = (hbuf.ring.wpos+1) & 7;
+        hbuf.ring.wpos = (hbuf.ring.wpos+1) & (SZ_HIBUF-1);
         sei();
         hbuf.ring.rbuf[wpos].type = tp;
         hbuf.ring.rbuf[wpos].service = svc;
@@ -70,7 +70,7 @@ void EventQueueManager::yield (void) {
     DBG_ENTER(0);
     if (hbuf.ring.rpos != hbuf.ring.wpos) {
         volatile Event *ev = &hbuf.ring.rbuf[hbuf.ring.rpos];
-        hbuf.ring.rpos = (hbuf.ring.rpos+1) & 7;
+        hbuf.ring.rpos = (hbuf.ring.rpos+1) & (SZ_HIBUF-1);
         for (uint8_t i=0; i<numsubscribers; ++i) {
             if (subscribers[i].id == ev->service) {
                 DBG_LEAVE(0);
@@ -121,7 +121,7 @@ volatile Event *EventQueueManager::waitEvent (void) {
         volatile Event *ev;
         if (hbuf.ring.rpos != hbuf.ring.wpos) {
             ev = &hbuf.ring.rbuf[hbuf.ring.rpos];
-            hbuf.ring.rpos = (hbuf.ring.rpos+1) & 7;
+            hbuf.ring.rpos = (hbuf.ring.rpos+1) & (SZ_HIBUF-1);
         }
         else if (ts >= timernext) {
             DBG_ENTER(1);
@@ -141,7 +141,7 @@ volatile Event *EventQueueManager::waitEvent (void) {
         }
         else {
             ev = &lbuf.ring.rbuf[lbuf.ring.rpos];
-            lbuf.ring.rpos = (lbuf.ring.rpos+1) & 63;
+            lbuf.ring.rpos = (lbuf.ring.rpos+1) & (SZ_LOBUF-1);
         }
         matched = false;
         for (i=0; i<numsubscribers; ++i) {

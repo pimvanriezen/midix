@@ -49,6 +49,10 @@ void DisplayClient::write (const char *str, bool clear) {
 }
 
 void DisplayClient::write (uint8_t i, bool clear) {
+    if (! i) {
+        write ("0", clear);
+        return;
+    }
     char c[5];
     uint8_t cpos = 0;
     if (i>99) c[cpos++] = '0' + i/100;
@@ -60,6 +64,11 @@ void DisplayClient::write (uint8_t i, bool clear) {
 }
 
 void DisplayClient::write (uint16_t val, bool clear) {
+    if (! val) {
+        write ("0", clear);
+        return;
+    }
+
     uint16_t rest, v;
     uint8_t cpos = 0;
     char c[10];

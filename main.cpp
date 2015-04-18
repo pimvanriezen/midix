@@ -1,10 +1,11 @@
- #include <Arduino.h>
+#include <Arduino.h>
 #include "EventQueue.h"
 #include "Port.h"
 #include "Console.h"
 #include "Application.h"
 #include "Display.h"
 #include "DriverILI9341.h"
+#include "Memory.h"
 #include <avr/io.h>
 
 /* RegDef:  External Memory Control Register A */
@@ -24,6 +25,7 @@ public:
                         encval[0] = encval[1] = 64;
                         oldval[0] = oldval[1] = 0;
                         missed = 255;
+                        fmem = 0;
                     }
                     ~Main (void) {}
     
@@ -35,6 +37,7 @@ public:
     uint8_t          encval[2];
     uint8_t          oldval[2];
     uint16_t         missed;
+    uint16_t         fmem;
 };
 
 Main M;
@@ -69,58 +72,14 @@ void Main::setup (void) {
     
     Display.begin (DriverILI9341::load());
     
-    /*
-    XMCRB=1;
-    XMCRA= 0x80;
+    Console.write ("Testing external RAM...");
     
-    volatile uint8_t *ptr = (volatile uint8_t *) 0x2200;
-    
-    *ptr = 0x55;
-    
-    while (ptr < (uint8_t *) 0xA200) {
-        *ptr++ = 0x55;
+    if (Memory.initializeExternalRAM (0x8000)) {
+        Console.write (" PASS\r\n");
     }
-    ptr = (uint8_t *) 0x2200;
-    while (ptr < (uint8_t *) 0xA200) {
-        if (*ptr == 0x55) {
-            ptr++;
-            continue;
-        }
-        if ((*ptr) != 0x55) {
-            Serial.print ("!");
-            Serial.print ((uint16_t) ptr, HEX);
-            Serial.print (":");
-            Serial.print (*ptr, HEX);
-        }
-        ptr++;
+    else {
+        Console.write (" FAIL\r\n");
     }
-    
-    ptr = (volatile uint8_t *) 0x2200;
-
-    while (ptr < (uint8_t *) 0xA200) {
-        *ptr++ = 0xaa;
-    }
-    ptr = (uint8_t *) 0x2200;
-
-    while (ptr < (uint8_t *) 0xA200) {
-        *ptr++ = 0xaa;
-    }
-    ptr = (uint8_t *) 0x2200;
-    while (ptr < (uint8_t *) 0xA200) {
-        if (*ptr == 0xaa) {
-            ptr++;
-            continue;
-        }
-        if ((*ptr) != 0xaa) {
-            Serial.print ("!");
-            Serial.print ((uint16_t) ptr, HEX);
-            Serial.print (":");
-            Serial.print (*ptr, HEX);
-        }
-        ptr++;
-    }
-
-    Serial.println (*ptr, HEX); */
 }
 
 // --------------------------------------------------------------------------
@@ -164,10 +123,18 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
             if (missed != EventQueue.missedTicks) {
                 Display.setCursor (5,225);
                 Display.setFont (0);
-                Display.write ("miss: ");
+                Display.write ("Miss: ");
                 Display.write (EventQueue.missedTicks);
                 Display.setFont (1);
                 missed = EventQueue.missedTicks;
+            }
+            if (fmem != Memory.available()) {
+                fmem = Memory.available();
+                Display.setCursor (160,225);
+                Display.setFont (0);
+                Display.write ("MemFree: ");
+                Display.write (fmem);
+                Display.setFont (1);
             }
             return;
             
