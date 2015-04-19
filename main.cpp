@@ -120,8 +120,8 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                 Display.setFont (1);
                 missed = EventQueue.missedTicks;
             }
-            if (fmem != Memory.available()) {
-                fmem = Memory.available();
+            if (fmem != (uint16_t) Memory.available()) {
+                fmem = (uint16_t) Memory.available();
                 Display.setCursor (160,225);
                 Display.setFont (0);
                 Display.write ("MemFree: ");

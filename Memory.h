@@ -5,7 +5,7 @@ class MemoryController
 {
 public:
     void scanForRAM (void);
-    uint16_t available (void);
+    int available (void);
 };
 
 extern MemoryController Memory;

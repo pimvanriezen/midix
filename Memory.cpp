@@ -3,6 +3,14 @@
 #include <avr/io.h>
 
 extern unsigned int __bss_end;
+extern void *__brkval;
+
+struct freelist {
+        size_t sz;
+        struct freelist *nx;
+};
+
+extern struct freelist *__flp;
 
 void MemoryController::scanForRAM (void) {
 #ifdef BOARD_MEGA
@@ -33,6 +41,11 @@ void MemoryController::scanForRAM (void) {
         do {
             if ((*ptr) != (pattern ^ (((uint16_t) ptr) >> 8))) {
                 endptr = endptr - 256;
+                if (endptr == (uint8_t *) 0x2200) {
+                    Serial.write ("\rTesting memory 8192 bytes");
+                    Serial.println ("\r\nNo extended memory found");
+                    return;
+                }
                 retry = true;
                 break;
             }
@@ -51,17 +64,35 @@ void MemoryController::scanForRAM (void) {
         if (! retry) start += 37;
     } while (retry || start > 36);
 
+    struct freelist *fp;
+    
+    ptr = (uint8_t *) 0x2200;
+    fp = (struct freelist *) 0x2200;
+    fp->nx = NULL;
+    fp->sz = (uint16_t) (endptr - ptr);
+    
+    fp = __flp;
+    while (fp && fp->nx) fp = fp->nx;
+    if (fp) fp->nx = (struct freelist *) 0x2200;
+    else __flp = (struct freelist *) 0x2200;
     Serial.println ("\r\nMemory test done");
-    __malloc_heap_end = (char*) (endptr + 0xff);
-    __bss_end = (unsigned int) (endptr + 0xff);
 #endif
 }
 
-uint16_t MemoryController::available (void) {
-    uint8_t *ptr = (uint8_t *) malloc (1);
-    uint16_t res = ((uint16_t)__malloc_heap_end) - ((uint16_t)ptr);
-    free (ptr);
-    return res;
+int MemoryController::available (void) {
+      int free_memory;
+
+      if((int)__brkval == 0)
+         free_memory = ((int)&free_memory) - ((int)&__bss_end);
+      else
+        free_memory = ((int)&free_memory) - ((int)__brkval);
+
+    struct freelist *fp = __flp;
+    while (fp) {
+        free_memory += fp->sz;
+        fp = fp->nx;
+    }
+    return free_memory;
 }
 
 MemoryController Memory;
