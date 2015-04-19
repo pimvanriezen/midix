@@ -5,6 +5,7 @@
 extern unsigned int __bss_end;
 
 void MemoryController::scanForRAM (void) {
+#ifdef BOARD_MEGA
     XMCRB=1;
     XMCRA= 0x80;
     
@@ -14,6 +15,7 @@ void MemoryController::scanForRAM (void) {
     uint8_t start = 0;
     bool retry = false;
     
+    Serial.write ("Checking for external SRAM on BOARD_MEGA\r\n");
     Serial.write ("Testing memory ");
     
     do {
@@ -52,6 +54,7 @@ void MemoryController::scanForRAM (void) {
     Serial.println ("\r\nMemory test done");
     __malloc_heap_end = (char*) (endptr + 0xff);
     __bss_end = (unsigned int) (endptr + 0xff);
+#endif
 }
 
 uint16_t MemoryController::available (void) {

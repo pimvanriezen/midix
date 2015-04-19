@@ -29,7 +29,7 @@ void setup (void) {
     Serial.write (27);
     Serial.write ("[2J");
     Serial.write (27);
-    Serial.write ("[HMIDIx 0.1\r\n---------------------------------------"
+    Serial.write ("[HMIDIx 1.0\r\n---------------------------------------"
                   "-------------------------------------\r\n");
     Memory.scanForRAM();
     I2C.begin ();
