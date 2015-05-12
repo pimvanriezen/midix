@@ -1,19 +1,19 @@
 #include "SPI.h"
 #include "Adafruit_GFX.h"
-#include "Adafruit_ILI9341.h"
-//#include "helvetica24.h"
-//#include "helvetica11.h"
-#include "DriverILI9341.h"
+#include "Adafruit_TFTLCD.h"
+#include "helvetica24.h"
+#include "helvetica11.h"
+#include "DriverILI9341P.h"
 #include "Console.h"
 
-#define PIN_BACKLIGHT 8
+#define PIN_BACKLIGHT 6
 
-class MXScreen : public EventReceiver
+class MXScreenP : public EventReceiver
 {
 public:
-    MXScreen (Adafruit_ILI9341 *t) {
+    MXScreenP (Adafruit_TFTLCD *t) {
         tft = t;
-        tft->begin();
+        tft->begin(0x9341);
         tft->setRotation (1);
         cursor_x = 0;
         cursor_y = 0;
@@ -22,7 +22,7 @@ public:
         EventQueue.subscribe (SVC_GFX, this);
     }
     
-    ~MXScreen (void) {
+    ~MXScreenP (void) {
     }
     
     void backlightOn (void) {
@@ -42,11 +42,13 @@ public:
     }
 
     void clearBackground (void) {
+        bool first = true;
         for (uint16_t i=0; i<240; ++i) {
             for (uint16_t x=0; x<320; x+= 40) {
                 tft->setAddrWindow (x,i,x+39,i);
                 EventQueue.yield();
-                tft->pushColor (inks[0], 40);
+                tft->flood (inks[0], 40);
+                first = false;
                 EventQueue.yield();
             }
         }
@@ -56,21 +58,21 @@ public:
         for (uint16_t yy=y; yy<y+h; ++yy) {
             tft->setAddrWindow (x,yy,x+w-1,yy);
             EventQueue.yield();
-            tft->pushColor (inks[0], w);
+            tft->pushColors (inks[0], w);
             EventQueue.yield();
         }
     }
     
     void setInk (uint8_t r, uint8_t g, uint8_t b) {
         uint8_t tr, tg, tb;
-        tr = cblend (r, bg_r, 0x48);
-        tg = cblend (g, bg_g, 0x48);
-        tb = cblend (b, bg_b, 0x48);
-        inks[1] = tft->color565 (tr,tg,tb);
-
         tr = cblend (r, bg_r, 0x80);
         tg = cblend (g, bg_g, 0x80);
         tb = cblend (b, bg_b, 0x80);
+        inks[1] = tft->color565 (tr,tg,tb);
+
+        tr = cblend (r, bg_r, 0xc0);
+        tg = cblend (g, bg_g, 0xc0);
+        tb = cblend (b, bg_b, 0xc0);
         inks[2] = tft->color565 (tr,tg,tb);
         inks[3] = tft->color565 (r, g, b);
     }
@@ -131,13 +133,15 @@ public:
         if (c == ' ') {
             if (clear)
             {
+                bool f = true;
                 tft->setAddrWindow (cursor_x, cursor_y,
                                     cursor_x+font_height/3,
                                     cursor_y + font_height-1);
                 
                 for (uint8_t y=0; y<font_height;++y) {
                     for (uint8_t x=0; x<((font_height/3)+1); ++x) {
-                        tft->pushColor (inks[0]);
+                        tft->pushColor (inks[0], f);
+                        f = false;
                     }
                     EventQueue.yield();
                 }
@@ -156,6 +160,7 @@ public:
         tft->setAddrWindow (cursor_x, cursor_y,
                             cursor_x + c_width,
                             cursor_y + font_height - 1);
+        bool f=true;
 
         for (uint8_t y=0; y<font_height; ++y) {
             for (uint8_t x=0;x<c_width; ++x) {
@@ -184,10 +189,10 @@ public:
                         bitpos-=8;
                     }
                 }
-                tft->pushColor (inks[pix]);
+                tft->pushColor (inks[pix], f);
+                f = false;
             }
-            tft->pushColor (inks[0]);
-            Serial.println (inks[0], HEX);
+            tft->pushColor (inks[0], f);
             EventQueue.yield();
         }
         
@@ -196,7 +201,6 @@ public:
     
     void handleEvent (eventtype tp, eventid id, uint16_t X,
                       uint8_t Y, uint8_t Z) {
-
         char xstr[2];
         xstr[0] = X&127;
         xstr[1] = 0;
@@ -264,15 +268,17 @@ protected:
     const uint8_t *font_data;
     const uint16_t *font_offs;
     uint8_t font_height;
-    Adafruit_ILI9341 *tft;
+    Adafruit_TFTLCD *tft;
 };
 
-// For the Adafruit shield, these are the default.
-#define TFT_DC 9
-#define TFT_CS 10
+#define TFT_RST 5
+#define TFT_RD 7
+#define TFT_WR 8
+#define TFT_CD 9
+#define TFT_CS 11
 
-EventReceiver *DriverILI9341::load (void) {
-    // Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
-    Adafruit_ILI9341 *tft = new Adafruit_ILI9341(TFT_CS, TFT_DC);
-    return new MXScreen (tft);
+EventReceiver *DriverILI9341P::load (void) {
+    Adafruit_TFTLCD *tft = new Adafruit_TFTLCD(TFT_CS, TFT_CD,
+                                               TFT_WR, TFT_RD, TFT_RST);
+    return new MXScreenP (tft);
 }

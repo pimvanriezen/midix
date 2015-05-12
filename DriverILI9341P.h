@@ -4,7 +4,7 @@
 #include "Display.h"
 #include "EventQueue.h"
 
-class DriverILI9341
+class DriverILI9341P
 {
 public:
     static EventReceiver *load (void);

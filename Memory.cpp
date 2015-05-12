@@ -1,9 +1,12 @@
 #include <Arduino.h>
 #include "Memory.h"
-#include <avr/io.h>
 
+#ifdef BOARD_MEGA
+#include <avr/io.h>
 extern unsigned int __bss_end;
 extern void *__brkval;
+
+#endif
 
 struct freelist {
         size_t sz;
@@ -80,6 +83,7 @@ void MemoryController::scanForRAM (void) {
 }
 
 int MemoryController::available (void) {
+#ifdef BOARD_MEGA
       int free_memory;
 
       if((int)__brkval == 0)
@@ -93,6 +97,7 @@ int MemoryController::available (void) {
         fp = fp->nx;
     }
     return free_memory;
+#endif
 }
 
 MemoryController Memory;

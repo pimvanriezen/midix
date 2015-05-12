@@ -13,12 +13,14 @@ void I2CHandler::begin (void) {
     if (! begun) {
         Wire.begin();
         begun = true;
-    
-        #ifndef CPU_FREQ
-          #define CPU_FREQ 16000000L
+
+        #ifdef BOARD_MEGA    
+          #ifndef CPU_FREQ
+            #define CPU_FREQ 16000000L
+          #endif
+          #define I2C_FREQ 400000L
+          TWBR = ((CPU_FREQ / I2C_FREQ) - 16) / 2;
         #endif
-        #define I2C_FREQ 400000L
-        TWBR = ((CPU_FREQ / I2C_FREQ) - 16) / 2;
     }
 }
 

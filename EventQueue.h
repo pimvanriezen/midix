@@ -1,6 +1,11 @@
 #ifndef _EVENTQUEUE_H
 #define _EVENTQUEUE_H 1
 
+#ifndef sei
+#define sei interrupts
+#define cli noInterrupts
+#endif
+
 /// The event type determines handling priority.
 /// IRQ events have full priority. REQUEST events
 /// will not be handled in EventQueueManager::yield(), only in the regular
@@ -58,7 +63,7 @@ struct Callback
 /// Basic ring buffer storage. Note that the actual Event array
 /// is kept at zero size here. Unions below define storage size
 /// for both ring buffers used in the EventQueueManager.
-struct RingBuffer
+struct MXRingBuffer
 {
     volatile uint8_t     wpos;
     volatile uint8_t     rpos;
@@ -71,15 +76,15 @@ struct RingBuffer
 /// Storage spec for the high priority buffer (8 entries).
 union HighPriorityBuffer
 {
-    RingBuffer           ring;
-    char                 storage[sizeof(RingBuffer)+SZ_HIBUF*sizeof(Event)];
+    MXRingBuffer         ring;
+    char                 storage[sizeof(MXRingBuffer)+SZ_HIBUF*sizeof(Event)];
 };
 
 /// Storage spec for the low priority buffer (64 entries).
 union LowPriorityBuffer
 {
-    RingBuffer           ring;
-    char                 storage[sizeof(RingBuffer)+SZ_LOBUF*sizeof(Event)];
+    MXRingBuffer         ring;
+    char                 storage[sizeof(MXRingBuffer)+SZ_LOBUF*sizeof(Event)];
 };
 
 /// Basic event pump that can also emit timer of its own volition.

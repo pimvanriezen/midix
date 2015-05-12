@@ -25,6 +25,10 @@ void Application::handleEvent (eventtype tp, eventid id, uint16_t X,
 Application *App;
 
 void setup (void) {
+    pinMode (13, OUTPUT);
+    digitalWrite (13, LOW);
+    pinMode (6, OUTPUT);
+    digitalWrite (6, LOW);
     Serial.begin (115200);
     Serial.write (27);
     Serial.write ("[2J");
@@ -34,6 +38,7 @@ void setup (void) {
     Memory.scanForRAM();
     I2C.begin ();
     Console.begin ();
+    digitalWrite (13, HIGH);
     App->setup ();
     InPort.begin();
     Port.begin();

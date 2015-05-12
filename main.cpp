@@ -1,12 +1,12 @@
 #include <Arduino.h>
+#include <SPI.h>
 #include "EventQueue.h"
 #include "Port.h"
 #include "Console.h"
 #include "Application.h"
 #include "Display.h"
-#include "DriverILI9341.h"
+#include "DriverILI9341P.h"
 #include "Memory.h"
-#include <avr/io.h>
 
 /* RegDef:  External Memory Control Register A */
 #define XMCRA _SFR_MEM8(0x74)
@@ -51,9 +51,9 @@ Font *Fonts = FontList;
 
 // --------------------------------------------------------------------------
 void Main::setup (void) {
-    // Assign interrupt 4 to pins 0-7 of i2c-connected port
+    // Assign interrupt 3 to pins 0-7 of i2c-connected port
     // extenders.
-    Port.assignInterrupt (4,0);
+    Port.assignInterrupt (3,0);
 
     // Set the inPort to send to a bogus serviceid, so its
     // events end up in the main loop.
@@ -71,7 +71,7 @@ void Main::setup (void) {
     OutPort.add (0x2100);
     OutPort.add (0x2107);
     
-    Display.begin (DriverILI9341::load());
+    Display.begin (DriverILI9341P::load());
 }
 
 // --------------------------------------------------------------------------
@@ -80,7 +80,7 @@ void Main::start (void) {
     Console.write ("Application started\r\n");
     OutPort.flash (0, 2);
     OutPort.flash (1, 2);
-    Display.setBackground (0x20, 0x30, 0x50);
+    Display.setBackground (0x30, 0x50, 0x90);
     Display.clearBackground();
     Display.backlightOn();
 //    Display.setBackground (0xff, 0xff, 0xff);
@@ -94,6 +94,7 @@ void Main::start (void) {
     Display.write ("Copyright 2015 Midilab");
     Display.setFont (1);
     EventQueue.subscribeTimer (SVC_LOOP);
+    Serial1.begin (31250);
 }
 
 // --------------------------------------------------------------------------
@@ -127,6 +128,10 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                 Display.write ("MemFree: ");
                 Display.write (fmem);
                 Display.setFont (1);
+            }
+            if (Serial1.available()) {
+                uint8_t bt = Serial1.read();
+                Serial.println (bt, HEX);
             }
             return;
             
