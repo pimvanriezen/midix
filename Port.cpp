@@ -181,7 +181,7 @@ void PortService::addOutput (uint16_t pid) {
     
     PortBus *p = findPortBus (i2cid);
     if (! p) {
-        Serial.write ("ERROR Could not find portbus ");
+        Serial.print (F("ERROR Could not find portbus "));
         Serial.println (i2cid, HEX);
         return;
     }
@@ -196,7 +196,7 @@ void PortService::addInput (uint16_t pid) {
     
     PortBus *p = findPortBus (i2cid);
     if (! p) {
-        Serial.write ("ERROR Could not find portbus ");
+        Serial.print (F("ERROR Could not find portbus "));
         Serial.println (i2cid, HEX);
         return;
     }

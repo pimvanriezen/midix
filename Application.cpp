@@ -41,10 +41,10 @@ void setup (void) {
     digitalWrite (6, LOW);
     Serial.begin (115200);
     Serial.write (27);
-    Serial.write ("[2J");
+    Serial.print (F("[2J"));
     Serial.write (27);
-    Serial.write ("[HMIDIx 1.0\r\n---------------------------------------"
-                  "-------------------------------------\r\n");
+    Serial.print (F("[HMIDIx 1.0\r\n---------------------------------------"
+                    "-------------------------------------\r\n"));
     Memory.scanForRAM();
     I2C.begin ();
     Console.begin ();

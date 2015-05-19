@@ -4,6 +4,7 @@
 #ifdef BOARD_MEGA
 #include <avr/io.h>
 extern unsigned int __bss_end;
+extern unsigned int __heap_start;
 extern void *__brkval;
 
 #endif
@@ -26,8 +27,8 @@ void MemoryController::scanForRAM (void) {
     uint8_t start = 0;
     bool retry = false;
     
-    Serial.write ("Checking for external SRAM on BOARD_MEGA\r\n");
-    Serial.write ("Testing memory ");
+    Serial.print (F("Checking for external SRAM on BOARD_MEGA\r\n"));
+    Serial.print (F("Testing memory "));
     
     do {
         pattern = start;
@@ -45,8 +46,8 @@ void MemoryController::scanForRAM (void) {
             if ((*ptr) != (pattern ^ (((uint16_t) ptr) >> 8))) {
                 endptr = endptr - 256;
                 if (endptr == (uint8_t *) 0x2200) {
-                    Serial.write ("\rTesting memory 8192 bytes");
-                    Serial.println ("\r\nNo extended memory found");
+                    Serial.print (F("\rTesting memory 8192 bytes"));
+                    Serial.println (F("\r\nNo extended memory found"));
                     return;
                 }
                 retry = true;
@@ -59,9 +60,9 @@ void MemoryController::scanForRAM (void) {
         } while (ptr != (endptr+0xff));
         
         if (! start) {
-            Serial.write ("\rTesting memory ");
+            Serial.print (F("\rTesting memory "));
             Serial.print ((uint16_t)endptr - 0x100);
-            Serial.write (" bytes ");
+            Serial.print (F(" bytes "));
             Serial.write (8);
         }
         if (! retry) start += 37;
@@ -78,7 +79,7 @@ void MemoryController::scanForRAM (void) {
     while (fp && fp->nx) fp = fp->nx;
     if (fp) fp->nx = (struct freelist *) 0x2200;
     else __flp = (struct freelist *) 0x2200;
-    Serial.println ("\r\nMemory test done");
+    Serial.println (F("\r\nMemory test done"));
 #endif
 }
 
@@ -98,6 +99,7 @@ int MemoryController::available (void) {
     }
     return free_memory;
 #endif
+    return 0;
 }
 
 MemoryController Memory;

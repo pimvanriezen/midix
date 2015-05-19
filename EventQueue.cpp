@@ -208,5 +208,5 @@ EventReceiver::~EventReceiver (void) {
 // --------------------------------------------------------------------------
 void EventReceiver::handleEvent (eventtype e, eventid id, uint16_t X,
                                  uint8_t Y, uint8_t Z) {
-    Serial.println ("misfire");
+    Serial.println (F("misfire"));
 }

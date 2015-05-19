@@ -32,7 +32,7 @@ void I2CHandler::begin (void) {
         for (uint8_t dev=1; dev<128; ++dev) {
             Wire.beginTransmission (dev);
             if (Wire.endTransmission() == 0) {
-                Serial.print ("I2C device found at address 0x");
+                Serial.print (F("I2C device found at address 0x"));
                 Serial.println (dev, HEX);
             }
         }
