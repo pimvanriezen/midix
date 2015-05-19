@@ -11,13 +11,18 @@ DEFISR(5)
 DEFISR(6)
 DEFISR(7)
 
+// ==========================================================================
+// CLASS InterruptCatcher
+// ==========================================================================
 InterruptCatcher::InterruptCatcher (void) {
     count = 0;
 }
 
+// --------------------------------------------------------------------------
 InterruptCatcher::~InterruptCatcher (void) {
 }
 
+// --------------------------------------------------------------------------
 #define ATTACHISR(irqid, XX) { attachInterrupt (irqid, isr ## XX, RISING); }
 
 void InterruptCatcher::assign (uint8_t id, genisrptr func) {
@@ -37,8 +42,10 @@ void InterruptCatcher::assign (uint8_t id, genisrptr func) {
     count++;
 }
 
+// --------------------------------------------------------------------------
 void InterruptCatcher::call (uint8_t idx) {
     if (idx<count) genisr[idx](irqid[idx]);
 }
 
+// --------------------------------------------------------------------------
 InterruptCatcher IRQ;
