@@ -51,14 +51,13 @@ Font *Fonts = FontList;
 
 // --------------------------------------------------------------------------
 void Main::setup (void) {
-    // Assign interrupt 3 to pins 0-7 of i2c-connected port
-    // extenders.
-    Port.assignInterrupt (3,0);
-
     // Set the inPort to send to a bogus serviceid, so its
     // events end up in the main loop.
     InPort.setReceiver (SVC_LOOP);
 
+    Port.addBus (0x20, 22, 23);
+    Port.addBus (0x21, 24, 25);
+    
     // Two encoders, hanging off pins 3&4 and 2&5 respectively
     InPort.addEncoder (0x2103, 0x2104);
     InPort.addEncoder (0x2102, 0x2105);

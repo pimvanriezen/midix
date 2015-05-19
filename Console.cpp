@@ -1,17 +1,23 @@
 #include <Arduino.h>
 #include "Console.h"
 
+// ==========================================================================
+// CLASS ConsoleService
+// ==========================================================================
 ConsoleService::ConsoleService (void) {
 }
 
+// --------------------------------------------------------------------------
 ConsoleService::~ConsoleService (void) {
 }
 
+// --------------------------------------------------------------------------
 void ConsoleService::begin (void) {
     Serial.println ("MIDIx console active\n");
     EventQueue.subscribe (SVC_CONSOLE, this);
 }
 
+// --------------------------------------------------------------------------
 void ConsoleService::handleEvent (eventtype tp, eventid id, uint16_t X,
                                   uint8_t Y, uint8_t Z) {
     if (id == EV_CONSOLE_OUT) {
@@ -27,6 +33,7 @@ void ConsoleService::handleEvent (eventtype tp, eventid id, uint16_t X,
     }
 }
 
+// --------------------------------------------------------------------------
 void ConsoleService::write (const char *c) {
     monoduo X;
     uint8_t Y;

@@ -2,43 +2,56 @@
 #include "EventQueue.h"
 #include "Display.h"
 
+// ==========================================================================
+// CLASS DisplayClient
+// ==========================================================================
 DisplayClient::DisplayClient (void) {
 }
 
+// --------------------------------------------------------------------------
 DisplayClient::~DisplayClient (void) {
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::begin (EventReceiver *r) {
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::backlightOn (void) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_BACKLIGHT, 1);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::backlightOff (void) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_BACKLIGHT, 0);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::setBackground (uint8_t r, uint8_t g, uint8_t b) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_SETBG, r, g, b);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::clearBackground (void) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_CLEARBG);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::setInk (uint8_t r, uint8_t g, uint8_t b) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_SETINK, r, g, b);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::setCursor (uint16_t x, uint8_t y) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_SETCRSR, x, y);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::setFont (uint8_t fontid) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_SETFONT, fontid);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::write (const char *str, bool clear) {
     char c;
     
@@ -48,6 +61,7 @@ void DisplayClient::write (const char *str, bool clear) {
     }
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::write (uint8_t i, bool clear) {
     if (! i) {
         write ("0", clear);
@@ -63,6 +77,7 @@ void DisplayClient::write (uint8_t i, bool clear) {
     write (c, clear);
 }
 
+// --------------------------------------------------------------------------
 void DisplayClient::write (uint16_t val, bool clear) {
     if (! val) {
         write ("0", clear);

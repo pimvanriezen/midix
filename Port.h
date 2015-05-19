@@ -22,7 +22,7 @@ class PortBus
 public:
                  /// Constructor.
                  /// \param id The i2c bus address of the extender.
-                 PortBus (uint8_t id);
+                 PortBus (uint8_t id, uint8_t irq0, uint8_t irq1);
                  
                  /// Dummy destructor.
                 ~PortBus (void);
@@ -56,6 +56,8 @@ public:
     void         handleInterrupt (uint8_t bank);
 
     uint8_t      i2cid; /// i2c bus address of the extender.
+    uint8_t      irq0pin;
+    uint8_t      irq1pin;
 
 protected:
     uint8_t      pinvalues[16]; /// Current values
@@ -72,10 +74,9 @@ public:
                  PortService (void);
                 ~PortService (void);
     
-    void         addBus (uint8_t i2cid);
+    void         addBus (uint8_t i2cid, uint8_t irq0, uint8_t irq1);
     void         addOutput (uint16_t);
     void         addInput (uint16_t);
-    void         assignInterrupt (uint8_t irq, uint8_t bank);
     void         begin (void);
     
     void         pinOut (uint16_t id, uint8_t timeval);

@@ -2,13 +2,18 @@
 #include <Wire.h>
 #include "I2C.h"
 
+// ==========================================================================
+// CLASS I2CHandler
+// ==========================================================================
 I2CHandler::I2CHandler (void) {
     begun = false;
 }
 
+// --------------------------------------------------------------------------
 I2CHandler::~I2CHandler (void) {
 }
 
+// --------------------------------------------------------------------------
 void I2CHandler::begin (void) {
     if (! begun) {
         Wire.begin();
@@ -20,10 +25,21 @@ void I2CHandler::begin (void) {
           #endif
           #define I2C_FREQ 400000L
           TWBR = ((CPU_FREQ / I2C_FREQ) - 16) / 2;
+        #else
+          Wire.setClock(400000);
         #endif
+        
+        for (uint8_t dev=1; dev<128; ++dev) {
+            Wire.beginTransmission (dev);
+            if (Wire.endTransmission() == 0) {
+                Serial.print ("I2C device found at address 0x");
+                Serial.println (dev, HEX);
+            }
+        }
     }
 }
 
+// --------------------------------------------------------------------------
 void I2CHandler::set (uint8_t dev, uint8_t addr, uint8_t val) {
     if (! begun) begin();
     Wire.beginTransmission (dev);
@@ -32,6 +48,7 @@ void I2CHandler::set (uint8_t dev, uint8_t addr, uint8_t val) {
     Wire.endTransmission();
 }
 
+// --------------------------------------------------------------------------
 uint8_t I2CHandler::get (uint8_t dev, uint8_t addr) {
     if (! begun) begin();
     Wire.beginTransmission (dev);
@@ -42,6 +59,7 @@ uint8_t I2CHandler::get (uint8_t dev, uint8_t addr) {
     return res;
 }
 
+// --------------------------------------------------------------------------
 uint16_t I2CHandler::getWord (uint8_t dev, uint8_t addr) {
     if (! begun) begin();
     Wire.beginTransmission (dev);

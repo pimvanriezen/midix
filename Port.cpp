@@ -2,15 +2,26 @@
 #include "Port.h"
 #include "I2C.h"
 #include "EventQueue.h"
+#include "IRQ.h"
+#include "Console.h"
+
+// --------------------------------------------------------------------------
+void portInterrupt (uint8_t irqid) {
+    EventQueue.sendEvent (TYPE_IRQ, SVC_PORT, EV_PORT_IRQ, irqid);
+}
 
 // ==========================================================================
 // CLASS PortBus
 // ==========================================================================
-PortBus::PortBus (uint8_t id) {
+PortBus::PortBus (uint8_t id, uint8_t irq0, uint8_t irq1) {
     i2cid = id;
     pinmodes = 0;
     activeTimers = 0;
     for (uint8_t i=0; i<16; ++i) pinvalues[i] = 0;
+    irq0pin = irq0;
+    irq1pin = irq1;
+    IRQ.assign (irq0, portInterrupt);
+    IRQ.assign (irq1, portInterrupt);
 }
 
 // --------------------------------------------------------------------------
@@ -146,16 +157,6 @@ void PortBus::handleInterrupt (uint8_t bank) {
     }
 }
 
-// --------------------------------------------------------------------------
-void portInterruptBank0 (void) {
-    EventQueue.sendEvent (TYPE_IRQ, SVC_PORT, EV_PORT_IRQ, 0);
-}
-
-// --------------------------------------------------------------------------
-void portInterruptBank1 (void) {
-    EventQueue.sendEvent (TYPE_IRQ, SVC_PORT, EV_PORT_IRQ, 1);
-}
-
 // ==========================================================================
 // CLASS PortService
 // ==========================================================================
@@ -167,9 +168,9 @@ PortService::~PortService (void) {
 }
 
 // --------------------------------------------------------------------------
-void PortService::addBus (uint8_t i2cid) {
+void PortService::addBus (uint8_t i2cid, uint8_t irq0, uint8_t irq1) {
     if (numports<8) {
-        ports[numports++] = new PortBus (i2cid);
+        ports[numports++] = new PortBus (i2cid, irq0, irq1);
     }
 }
 
@@ -180,12 +181,12 @@ void PortService::addOutput (uint16_t pid) {
     
     PortBus *p = findPortBus (i2cid);
     if (! p) {
-        addBus (i2cid);
-        p = findPortBus (i2cid);
+        Serial.write ("ERROR Could not find portbus ");
+        Serial.println (i2cid, HEX);
+        return;
     }
-    if (p) {
-        p->pinMode (pinid, OUTPUT);
-    }
+
+    p->pinMode (pinid, OUTPUT);
 }
 
 // --------------------------------------------------------------------------
@@ -195,18 +196,12 @@ void PortService::addInput (uint16_t pid) {
     
     PortBus *p = findPortBus (i2cid);
     if (! p) {
-        addBus (i2cid);
-        p = findPortBus (i2cid);
+        Serial.write ("ERROR Could not find portbus ");
+        Serial.println (i2cid, HEX);
+        return;
     }
-    if (p) {
-        p->pinMode (pinid, INPUT);
-    }
-}
 
-// --------------------------------------------------------------------------
-void PortService::assignInterrupt (uint8_t irq, uint8_t bank) {
-    if (bank) attachInterrupt (irq, portInterruptBank1, RISING);
-    else attachInterrupt (irq, portInterruptBank0, RISING);
+    p->pinMode (pinid, INPUT);
 }
 
 // --------------------------------------------------------------------------
@@ -225,10 +220,16 @@ void PortService::pinOut (uint16_t id, uint8_t timeval) {
 // --------------------------------------------------------------------------
 void PortService::handleEvent (eventtype tp, eventid id, uint16_t X,
                                uint8_t Y, uint8_t Z) {
+    
     for (uint8_t i=0; i<numports; ++i) {
         switch (id) {
             case EV_PORT_IRQ:
-                ports[i]->handleInterrupt (X&1);
+                if (ports[i]->irq0pin == X) {
+                    ports[i]->handleInterrupt (0);
+                }
+                else if (ports[i]->irq1pin == X) {
+                    ports[i]->handleInterrupt (1);
+                }
                 break;
             
             case EV_TIMER_TICK:
