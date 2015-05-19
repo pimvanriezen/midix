@@ -35,8 +35,8 @@ public:
     void             handleEvent (eventtype t, eventid id, uint16_t X,
                                   uint8_t Y, uint8_t Z);
     
-    uint8_t          encval[2];
-    uint8_t          oldval[2];
+    uint8_t          encval[16];
+    uint8_t          oldval[16];
     uint16_t         missed;
     uint16_t         fmem;
 };
@@ -57,18 +57,53 @@ void Main::setup (void) {
 
     Port.addBus (0x20, 22, 23);
     Port.addBus (0x21, 24, 25);
+    Port.addBus (0x22, 26, 27);
     
-    // Two encoders, hanging off pins 3&4 and 2&5 respectively
+    InPort.addEncoder (0x2003, 0x2004);
+    InPort.addEncoder (0x2002, 0x2005);
+    InPort.addEncoder (0x200f, 0x2008);
+    InPort.addEncoder (0x200e, 0x2009);
+    
+    InPort.addButton (0x2006);
+    InPort.addButton (0x2001);
+    InPort.addButton (0x200a);
+    InPort.addButton (0x200d);
+
+    OutPort.add (0x2000);
+    OutPort.add (0x2007);
+    OutPort.add (0x200c);
+    OutPort.add (0x200b);
+
     InPort.addEncoder (0x2103, 0x2104);
     InPort.addEncoder (0x2102, 0x2105);
+    InPort.addEncoder (0x210f, 0x2108);
+    InPort.addEncoder (0x210e, 0x2109);
     
-    // And their respective push button functions
     InPort.addButton (0x2106);
     InPort.addButton (0x2101);
-    
-    // LED 0-1 hang off GPIO pins 0 and 7 on i2c address 0x21
+    InPort.addButton (0x210a);
+    InPort.addButton (0x210d);
+
     OutPort.add (0x2100);
     OutPort.add (0x2107);
+    OutPort.add (0x210c);
+    OutPort.add (0x210b);
+
+    InPort.addEncoder (0x2203, 0x2204);
+    InPort.addEncoder (0x2202, 0x2205);
+    InPort.addEncoder (0x220f, 0x2208);
+    InPort.addEncoder (0x220e, 0x2209);
+    
+    InPort.addButton (0x2206);
+    InPort.addButton (0x2201);
+    InPort.addButton (0x220a);
+    InPort.addButton (0x220d);
+
+    OutPort.add (0x2200);
+    OutPort.add (0x2207);
+    OutPort.add (0x220c);
+    OutPort.add (0x220b);
+
     
     Display.begin (DriverILI9341P::load());
 }
@@ -77,8 +112,9 @@ void Main::setup (void) {
 void Main::start (void) {
     // Report the happy news
     Console.write ("Application started\r\n");
-    OutPort.flash (0, 2);
-    OutPort.flash (1, 2);
+    for (uint8_t i=0; i<12; ++i) {
+        OutPort.flash (i, 20);
+    }
     Display.setBackground (0x30, 0x50, 0x90);
     Display.clearBackground();
     Display.backlightOn();
