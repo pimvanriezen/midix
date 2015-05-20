@@ -28,8 +28,8 @@ public:
     void             call (uint8_t idx);
 
 protected:
-    genisrptr        genisr[8]; ///< List of callbacks
-    uint8_t          irqid[8]; ///< List of irq-numbers
+    genisrptr        genisr[16]; ///< List of callbacks
+    uint8_t          irqid[16]; ///< List of irq-numbers
     uint8_t          count; ///< Number of items in the list (max 8).
 };
 

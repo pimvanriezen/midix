@@ -46,9 +46,41 @@ void PortBus::begin (void) {
     // Set up global interrupt polarity
     I2C.set (i2cid, 0x0a, 0x02);
     
-    // Set all outputs to LOW
-    I2C.set (i2cid, 0x12, 0x00);
+    // Set all outputs to their correct states
+    uint8_t bt = (pinvalues[0] ? 1 : 0) |
+                 (pinvalues[1] ? 2 : 0) |
+                 (pinvalues[2] ? 4 : 0) |
+                 (pinvalues[3] ? 8 : 0) |
+                 (pinvalues[4] ? 16 : 0) |
+                 (pinvalues[5] ? 32 : 0) |
+                 (pinvalues[6] ? 64 : 0) |
+                 (pinvalues[7] ? 128 : 0);
+    I2C.set (i2cid, 0x12, bt);
+    bt = (pinvalues[8] ? 1 : 0) |
+         (pinvalues[9] ? 2 : 0) |
+         (pinvalues[10] ? 4 : 0) |
+         (pinvalues[11] ? 8 : 0) |
+         (pinvalues[12] ? 16 : 0) |
+         (pinvalues[13] ? 32 : 0) |
+         (pinvalues[14] ? 64 : 0) |
+         (pinvalues[15] ? 128 : 0);
+    I2C.set (i2cid, 0x13, bt);
     I2C.set (i2cid, 0x13, 0x00);
+}
+
+// --------------------------------------------------------------------------
+void PortBus::dump (void) {
+    char dbg[64];
+    sprintf (dbg, "Port %02x\r\n", i2cid);
+    Console.write (dbg);
+    sprintf (dbg, "    pinmodes %04x\r\n", pinmodes);
+    Console.write (dbg);
+    sprintf (dbg, "    pinvalues ");
+    for (uint8_t i=0; i<16; ++i) {
+        strcat (dbg, pinvalues[i] ? "1" : "0");
+    }
+    strcat (dbg, "\r\n");
+    Console.write (dbg);
 }
 
 // --------------------------------------------------------------------------
@@ -128,29 +160,68 @@ void PortBus::decreaseTimers (void) {
 }
 
 // --------------------------------------------------------------------------
-void PortBus::handleInterrupt (uint8_t bank) {
+void PortBus::handleInterrupt (uint8_t bank, bool isirq) {
+    if (i2cid == 0x23) return;
+    char dbg[16];
     uint8_t res = 0;
     uint8_t i2coffs = 0x12 + bank;
     uint8_t pins = I2C.get (i2cid, i2coffs);
+    
     uint8_t offs = bank ? 8 : 0;
     
+    if (I2C.error) {
+        sprintf (dbg, "I2C error %i\r\n", I2C.error);
+        Console.write (dbg);
+        I2C.resetBus();
+        Port.begin();
+        return;
+    }
+    
+    if (isirq) {
+        //sprintf (dbg, "i%02x%02x %02x\r\n", i2cid, i2coffs, pins);
+        //Console.write (dbg);
+    }
+ 
+
+    uint8_t numchanges = 0;
+    for (uint8_t i=0; i<8; ++i) {
+        uint8_t bit = 1 << i;
+        if ((pins & bit) && (pinvalues[i+offs] == 0)) {
+            numchanges++;
+        }
+        else if ((! (pins&bit)) && (pinvalues[i+offs])) {
+            numchanges++;
+        }
+    }
+    
+    if (! numchanges) return;
+    if (numchanges > 1) pins = I2C.get (i2cid, i2coffs);
+   
     for (uint8_t i=0; i<8; ++i) {
         uint8_t bit = 1 << i;
         if (pins & bit) {
             if (pinvalues[i+offs] == 0) {
+                if (! isirq) {
+                    //sprintf (dbg, "c0 p%i %02x%02x\r\n", i, i2cid, i2coffs);
+                    //Console.write (dbg);
+                }
                 pinvalues[i+offs] = 255;
                 res |= bit;
-                EventQueue.sendEvent (TYPE_REQUEST, SVC_INPort,
-                                      EV_INPort_CHANGE,
+                EventQueue.sendEvent (TYPE_REQUEST, SVC_INPORT,
+                                      EV_INPORT_CHANGE,
                                       (i2cid << 8) | (i+offs), 1);
             }
         }
         else {
             if (pinvalues[i+offs]) {
+                if (! isirq) {
+                    //sprintf (dbg, "c1 p%i %02x%02x\r\n", i, i2cid, i2coffs);
+                    //Console.write (dbg);
+                }
                 pinvalues[i+offs] = 0;
                 res |= bit;
-                EventQueue.sendEvent (TYPE_REQUEST, SVC_INPort,
-                                      EV_INPort_CHANGE,
+                EventQueue.sendEvent (TYPE_REQUEST, SVC_INPORT,
+                                      EV_INPORT_CHANGE,
                                       (i2cid << 8) | (i+offs), 0);
             }
         }
@@ -205,10 +276,28 @@ void PortService::addInput (uint16_t pid) {
 }
 
 // --------------------------------------------------------------------------
+void PortService::addAnalogButton (uint8_t pin, uint8_t type, uint16_t thr) {
+    if (numbuttons < 8) {
+        abuttons[numbuttons].pin = pin;
+        abuttons[numbuttons].type = type;
+        abuttons[numbuttons].threshold = thr;
+        abuttons[numbuttons].state = 0;
+        numbuttons++;
+    }
+}
+
+// --------------------------------------------------------------------------
 void PortService::begin (void) {
     EventQueue.subscribe (SVC_PORT, this);
     EventQueue.subscribeTimer (SVC_PORT);
     for (uint8_t i=0; i<numports; ++i) ports[i]->begin();
+}
+
+// --------------------------------------------------------------------------
+void PortService::dump (void) {
+    for (uint8_t i=0; i<numports; ++i) {
+        ports[i]->dump();
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -237,11 +326,59 @@ void PortService::handleEvent (eventtype tp, eventid id, uint16_t X,
                 
                 // Do pre-emptive polling in case we missed an
                 // interrupt.
-                if (! (EventQueue.ts & 63)) ports[i]->handleInterrupt (0);
+                if (! (EventQueue.ts & 63)) {
+                    ports[i]->handleInterrupt (0, false);
+                }
                 else if ((EventQueue.ts&63) == 32) {
-                    ports[i]->handleInterrupt (1);
+                    ports[i]->handleInterrupt (1, false);
                 }
                 break;
+        }
+    }
+    
+    if (id == EV_TIMER_TICK && (! (EventQueue.ts & 7))) {
+        for (uint8_t i=0; i<numbuttons; ++i) {
+            uint16_t val = analogRead (abuttons[i].pin);
+            uint8_t state;
+            switch (abuttons[i].type) {
+                case ABUTTON_DOWN_LOW:
+                    state = (val < abuttons[i].threshold) ? HIGH : LOW;
+                    break;
+                
+                case ABUTTON_DOWN_HIGH:
+                    state = (val > abuttons[i].threshold) ? HIGH : LOW;
+                    break;
+            }
+            
+            switch (state) {
+                case HIGH:
+                    if (abuttons[i].state == 0) {
+                        abuttons[i].state = 5;
+                    }
+                    else if ((abuttons[i].state > 1) &&
+                             (abuttons[i].state < 6)) {
+                        abuttons[i].state--;
+                        if (abuttons[i].state == 1) {
+                            EventQueue.sendEvent (TYPE_REQUEST, InPort.outsvc,
+                                                  EV_INPUT_ABUTTON_DOWN, i);
+                        }
+                    }
+                    break;
+                    
+                case LOW:
+                    if (abuttons[i].state == 1) {
+                        abuttons[i].state = 6;
+                    }
+                    if (abuttons[i].state) {
+                        abuttons[i].state++;
+                        if (abuttons[i].state == 12) {
+                            abuttons[i].state = 0;
+                            EventQueue.sendEvent (TYPE_REQUEST, InPort.outsvc,
+                                                  EV_INPUT_ABUTTON_UP, i);
+                        }
+                    }
+                    break;
+            }
         }
     }
 }
@@ -301,7 +438,7 @@ void InPortService::addEncoder (uint16_t id1, uint16_t id2) {
 
 // --------------------------------------------------------------------------
 void InPortService::begin (void) {
-    EventQueue.subscribe (SVC_INPort, this);
+    EventQueue.subscribe (SVC_INPORT, this);
 }
 
 // --------------------------------------------------------------------------

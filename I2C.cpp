@@ -2,11 +2,14 @@
 #include <Wire.h>
 #include "I2C.h"
 
+#define PIN_I2CRST 53
+
 // ==========================================================================
 // CLASS I2CHandler
 // ==========================================================================
 I2CHandler::I2CHandler (void) {
     begun = false;
+    error = 0;
 }
 
 // --------------------------------------------------------------------------
@@ -14,8 +17,21 @@ I2CHandler::~I2CHandler (void) {
 }
 
 // --------------------------------------------------------------------------
+void I2CHandler::resetBus() {
+    Serial.write ("I2C reset\r\n");
+    digitalWrite (PIN_I2CRST, LOW);
+    digitalWrite (20, LOW);
+    digitalWrite (21, LOW);
+    delayMicroseconds (50);
+    digitalWrite (PIN_I2CRST, HIGH);    
+    Wire.begin();
+}
+
+// --------------------------------------------------------------------------
 void I2CHandler::begin (void) {
     if (! begun) {
+        pinMode (PIN_I2CRST, OUTPUT);
+        digitalWrite (PIN_I2CRST, HIGH);
         Wire.begin();
         begun = true;
 
@@ -42,32 +58,48 @@ void I2CHandler::begin (void) {
 // --------------------------------------------------------------------------
 void I2CHandler::set (uint8_t dev, uint8_t addr, uint8_t val) {
     if (! begun) begin();
+    noInterrupts();
     Wire.beginTransmission (dev);
     Wire.write (addr);
     Wire.write (val);
-    Wire.endTransmission();
+    error = Wire.endTransmission();
+    interrupts();
 }
 
 // --------------------------------------------------------------------------
 uint8_t I2CHandler::get (uint8_t dev, uint8_t addr) {
+    digitalWrite (20, LOW);
+    digitalWrite (21, LOW);
+    delayMicroseconds (3);
+    uint8_t res = 0;
     if (! begun) begin();
+    noInterrupts();
     Wire.beginTransmission (dev);
     Wire.write (addr);
-    Wire.endTransmission();
-    Wire.requestFrom (dev, (uint8_t) 1);
-    uint8_t res = Wire.read();
+    error = Wire.endTransmission();
+    if (! error) {
+        Wire.requestFrom (dev, (uint8_t) 1);
+        res = Wire.read();
+    }
+    interrupts();
     return res;
 }
 
 // --------------------------------------------------------------------------
 uint16_t I2CHandler::getWord (uint8_t dev, uint8_t addr) {
+    digitalWrite (20, LOW);
+    digitalWrite (21, LOW);
+    delayMicroseconds (3);
+    uint8_t lo = 0, hi = 0;
     if (! begun) begin();
     Wire.beginTransmission (dev);
     Wire.write (addr);
-    Wire.endTransmission();
-    Wire.requestFrom (dev, (uint8_t) 2);
-    uint8_t lo = Wire.read();
-    uint8_t hi = Wire.read();
+    error = Wire.endTransmission();
+    if (! error) {
+        Wire.requestFrom (dev, (uint8_t) 2);
+        lo = Wire.read();
+        hi = Wire.read();
+    }
     return lo | (hi << 8);
 }
 

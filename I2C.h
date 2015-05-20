@@ -14,6 +14,9 @@ public:
                  /// Sets up I2C. Uses a 400KHz clock.
     void         begin (void);
     
+                 /// Resets the I2C bus.
+    void         resetBus (void);
+    
                  /// Write a byte to the I2C bus.
                  /// \param dev The I2C device
                  /// \param addr The register address to set.
@@ -29,6 +32,8 @@ public:
                  /// \param dev The I2C device
                  /// \param addr The register address to read.
     uint16_t     getWord (uint8_t dev, uint8_t addr);
+
+    bool         error;
     
 protected:
     bool         begun;

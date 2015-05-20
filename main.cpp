@@ -7,6 +7,7 @@
 #include "Display.h"
 #include "DriverILI9341P.h"
 #include "Memory.h"
+#include "IRQ.h"
 
 /* RegDef:  External Memory Control Register A */
 #define XMCRA _SFR_MEM8(0x74)
@@ -16,6 +17,7 @@
 
 
 #define SVC_LOOP 0x42
+#define EV_LOOP_BTIRQ 0x1f
 
 // --------------------------------------------------------------------------
 class Main : public Application
@@ -58,54 +60,71 @@ void Main::setup (void) {
     Port.addBus (0x20, 22, 23);
     Port.addBus (0x21, 24, 25);
     Port.addBus (0x22, 26, 27);
+    Port.addBus (0x23, 30, 31);
     
     InPort.addEncoder (0x2003, 0x2004);
-    InPort.addEncoder (0x2002, 0x2005);
     InPort.addEncoder (0x200f, 0x2008);
-    InPort.addEncoder (0x200e, 0x2009);
-    
     InPort.addButton (0x2006);
-    InPort.addButton (0x2001);
     InPort.addButton (0x200a);
-    InPort.addButton (0x200d);
-
     OutPort.add (0x2000);
-    OutPort.add (0x2007);
     OutPort.add (0x200c);
-    OutPort.add (0x200b);
 
     InPort.addEncoder (0x2103, 0x2104);
-    InPort.addEncoder (0x2102, 0x2105);
     InPort.addEncoder (0x210f, 0x2108);
-    InPort.addEncoder (0x210e, 0x2109);
-    
     InPort.addButton (0x2106);
-    InPort.addButton (0x2101);
     InPort.addButton (0x210a);
-    InPort.addButton (0x210d);
-
     OutPort.add (0x2100);
-    OutPort.add (0x2107);
     OutPort.add (0x210c);
-    OutPort.add (0x210b);
 
     InPort.addEncoder (0x2203, 0x2204);
-    InPort.addEncoder (0x2202, 0x2205);
     InPort.addEncoder (0x220f, 0x2208);
-    InPort.addEncoder (0x220e, 0x2209);
-    
     InPort.addButton (0x2206);
-    InPort.addButton (0x2201);
     InPort.addButton (0x220a);
-    InPort.addButton (0x220d);
-
     OutPort.add (0x2200);
-    OutPort.add (0x2207);
     OutPort.add (0x220c);
+
+    InPort.addEncoder (0x2303, 0x2304);
+    InPort.addEncoder (0x230f, 0x2308);
+    InPort.addButton (0x2306);
+    InPort.addButton (0x230a);
+    OutPort.add (0x2300);
+    OutPort.add (0x230c);
+    
+    InPort.addEncoder (0x2002, 0x2005);
+    InPort.addEncoder (0x200e, 0x2009);
+    InPort.addButton (0x2001);
+    InPort.addButton (0x200d);
+    OutPort.add (0x2007);
+    OutPort.add (0x200b);
+
+    InPort.addEncoder (0x2102, 0x2105);
+    InPort.addEncoder (0x210e, 0x2109);
+    InPort.addButton (0x2101);
+    InPort.addButton (0x210d);
+    OutPort.add (0x2107);
+    OutPort.add (0x210b);
+
+    InPort.addEncoder (0x2202, 0x2205);
+    InPort.addEncoder (0x220e, 0x2209);
+    InPort.addButton (0x2201);
+    InPort.addButton (0x220d);
+    OutPort.add (0x2207);
     OutPort.add (0x220b);
 
-    
+    InPort.addEncoder (0x2302, 0x2305);
+    InPort.addEncoder (0x230e, 0x2309);
+    InPort.addButton (0x2301);
+    InPort.addButton (0x230d);
+    OutPort.add (0x2307);
+    OutPort.add (0x230b);
+
     Display.begin (DriverILI9341P::load());
+    
+    Port.addAnalogButton (1, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (2, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (3, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (4, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (5, ABUTTON_DOWN_LOW, 1000);
 }
 
 // --------------------------------------------------------------------------
@@ -135,19 +154,20 @@ void Main::start (void) {
 // --------------------------------------------------------------------------
 void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                                uint8_t Y, uint8_t Z) {
+    char dbg[16];
     switch (id) {
         case EV_TIMER_TICK:
             if (EventQueue.ts & 7) return;
-            if (oldval[0] != encval[0]) {
-                Display.setCursor (150,100);
-                Display.write (encval[0], true);
-                oldval[0] = encval[0];
+            
+            for (int i=0; i<16; ++i) {
+                if (oldval[i] != encval[i]) {
+                    Display.setFont (0);
+                    Display.setCursor (32+32*(i&7),(i&8)?120:100);
+                    Display.write (encval[i], true);
+                    oldval[i] = encval[i];
+                }
             }
-            if (oldval[1] != encval[1]) {
-                Display.setCursor (150,130);
-                Display.write (encval[1], true);
-                oldval[1] = encval[1];
-            }
+
             if (missed != EventQueue.missedTicks) {
                 Display.setCursor (5,225);
                 Display.setFont (0);
@@ -168,30 +188,45 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
                 uint8_t bt = Serial1.read();
                 Serial.println (bt, HEX);
             }
-            return;
+            break;
+            
+        case EV_INPUT_ABUTTON_DOWN:
+            sprintf (dbg, "ADOWN %i\r\n", X);
+            Console.write (dbg);
+            break;
+            
+        case EV_INPUT_ABUTTON_UP:
+            sprintf (dbg, "AUP %i\r\n", X);
+            Console.write (dbg);
+            break;
+            
+        case EV_LOOP_BTIRQ:
+            sprintf (dbg, "BTIRQ %i\r\n", X);
+            break;
             
         case EV_INPUT_BUTTON_DOWN:
-            Console.write ("Button down\r\n");
+            sprintf (dbg, "BTDOWN %i\r\n", X);
+            Console.write (dbg);
             encval[X]=64;
             break;
         
         case EV_INPUT_BUTTON_UP:
-            Console.write ("Button up\r\n");
-            
+            sprintf (dbg, "BTUP %i\r\n", X);
+            Console.write (dbg);
             break;
             
         case EV_INPUT_ENCODER_LEFT:
             if (encval[X]) {
                 encval[X]--;
             }
-            OutPort.flash (0,1);
+            OutPort.flash (X & 7, 1);
             break;
 
         case EV_INPUT_ENCODER_RIGHT:
             if (encval[X]<127) {
                 encval[X]++;
             }
-            OutPort.flash (1,1);
+            OutPort.flash ((X&7)+8,1);
             break;
     }
 }

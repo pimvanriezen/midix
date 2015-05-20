@@ -5,13 +5,15 @@
 #define EV_PORT_IRQ 0x01
 #define EV_PORT_TIMER 0x02
 
-#define SVC_INPort 0x03
-#define EV_INPort_CHANGE 0x01
+#define SVC_INPORT 0x03
+#define EV_INPORT_CHANGE 0x01
 
 #define EV_INPUT_ENCODER_LEFT 0x30
 #define EV_INPUT_ENCODER_RIGHT 0x31
 #define EV_INPUT_BUTTON_DOWN 0x32
 #define EV_INPUT_BUTTON_UP 0x33
+#define EV_INPUT_ABUTTON_DOWN 0x34
+#define EV_INPUT_ABUTTON_UP 0x35
 
 #include "EventQueue.h"
 
@@ -36,6 +38,9 @@ public:
                  /// configuration.
     void         begin (void);
     
+                 /// Dump state.
+    void         dump (void);
+    
                  /// Current value of a pin. Valid for both input
                  /// and output ports.
     uint8_t      pinValue (uint8_t pin);
@@ -53,7 +58,7 @@ public:
     void         decreaseTimers (void);
     
                  /// Handles an interrupt.
-    void         handleInterrupt (uint8_t bank);
+    void         handleInterrupt (uint8_t bank, bool isirq=true);
 
     uint8_t      i2cid; /// i2c bus address of the extender.
     uint8_t      irq0pin;
@@ -63,6 +68,17 @@ protected:
     uint8_t      pinvalues[16]; /// Current values
     uint16_t     pinmodes; /// Current in/out modes.
     uint8_t      activeTimers; /// Number of active timers
+};
+
+#define ABUTTON_DOWN_LOW 0x0
+#define ABUTTON_DOWN_HIGH 0x1
+
+struct AButton
+{
+    uint8_t      pin;
+    uint8_t      type:1;
+    uint8_t      state:7;
+    uint16_t     threshold;
 };
 
 /// A service combining several Port Extenders and physical arduino
@@ -77,7 +93,10 @@ public:
     void         addBus (uint8_t i2cid, uint8_t irq0, uint8_t irq1);
     void         addOutput (uint16_t);
     void         addInput (uint16_t);
+    void         addAnalogButton (uint8_t pin, uint8_t type, 
+                                  uint16_t threshold);
     void         begin (void);
+    void         dump (void);
     
     void         pinOut (uint16_t id, uint8_t timeval);
     void         handleEvent (eventtype tp, eventid id, uint16_t X,
@@ -87,6 +106,8 @@ protected:
     PortBus     *findPortBus (uint8_t i2cid);
     PortBus     *ports[8];
     uint8_t      numports;
+    AButton      abuttons[8];
+    uint8_t      numbuttons;
 };
 
 extern PortService Port;
@@ -119,13 +140,14 @@ public:
     void         handleEncoder (uint8_t);
     void         handleEvent (eventtype tp, eventid id, uint16_t X,
                               uint8_t Y, uint8_t Z);
+
+    uint8_t      outsvc;
     
 protected:
     Button       buttons[24];
     Encoder      encoders[16];
     uint8_t      numbuttons;
     uint8_t      numencoders;
-    uint8_t      outsvc;
 };
 
 extern InPortService InPort;
