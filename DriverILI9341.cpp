@@ -56,6 +56,15 @@ public:
         for (uint16_t yy=y; yy<y+h; ++yy) {
             tft->setAddrWindow (x,yy,x+w-1,yy);
             EventQueue.yield();
+            tft->pushColor (inks[3], w);
+            EventQueue.yield();
+        }
+    }
+    
+    void clearRect (uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+        for (uint16_t yy=y; yy<y+h; ++yy) {
+            tft->setAddrWindow (x,yy,x+w-1,yy);
+            EventQueue.yield();
             tft->pushColor (inks[0], w);
             EventQueue.yield();
         }
@@ -217,7 +226,7 @@ public:
                 break;
                 
             case GFX_FILLRECT:
-                fillRect (xx.val[0], Y, xx.val[1], Z);
+                fillRect (xx.val[0]*2, Y, xx.val[1], Z);
                 break;
             
             case GFX_SETINK:

@@ -15,6 +15,7 @@
 #define GFX_DRAWCHAR 0x08
 #define GFX_DRAWBOX 0x09
 #define GFX_DRAWCIRCLE 0x0a
+#define GFX_CLEARRECT 0x0b
 
 struct Font
 {
@@ -36,9 +37,12 @@ public:
     void             backlightOff (void);
     void             setBackground (uint8_t, uint8_t, uint8_t);
     void             clearBackground (void);
+    void             fillRect (uint16_t x, uint8_t y, uint8_t w, uint8_t h);
+    void             clearRect (uint16_t x, uint8_t y, uint8_t w, uint8_t h);
+    void             drawBox (uint16_t x, uint8_t y, uint8_t w, uint8_t h);
     void             setInk (uint8_t, uint8_t, uint8_t);
-    void             setCursor (uint16_t, uint8_t);
     void             setFont (uint8_t);
+    void             setCursor (uint16_t x, uint8_t y);
     void             write (const char *, bool clear=false);
     void             write (uint8_t, bool clear=false);
     void             write (uint16_t, bool clear=false);

@@ -37,6 +37,30 @@ void DisplayClient::clearBackground (void) {
 }
 
 // --------------------------------------------------------------------------
+void DisplayClient::fillRect (uint16_t x, uint8_t y, uint8_t w, uint8_t h) {
+    monoduo X;
+    X.val[0] = x/2;
+    X.val[1] = w;
+    EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_FILLRECT, X.wval, y, h);
+}
+
+// --------------------------------------------------------------------------
+void DisplayClient::clearRect (uint16_t x, uint8_t y, uint8_t w, uint8_t h) {
+    monoduo X;
+    X.val[0] = x/2;
+    X.val[1] = w;
+    EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_CLEARRECT, X.wval, y, h);
+}
+
+// --------------------------------------------------------------------------
+void DisplayClient::drawBox (uint16_t x, uint8_t y, uint8_t w, uint8_t h) {
+    monoduo X;
+    X.val[0] = x/2;
+    X.val[1] = w;
+    EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_DRAWBOX, X.wval, y, h);
+}
+
+// --------------------------------------------------------------------------
 void DisplayClient::setInk (uint8_t r, uint8_t g, uint8_t b) {
     EventQueue.sendEvent (TYPE_REQUEST, SVC_GFX, GFX_SETINK, r, g, b);
 }
