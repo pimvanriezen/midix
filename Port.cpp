@@ -21,7 +21,7 @@ PortBus::PortBus (uint8_t id, uint8_t irq0, uint8_t irq1) {
     irq0pin = irq0;
     irq1pin = irq1;
     IRQ.assign (irq0, portInterrupt);
-    IRQ.assign (irq1, portInterrupt);
+    if (irq1 != irq0) IRQ.assign (irq1, portInterrupt);
 }
 
 // --------------------------------------------------------------------------
@@ -43,8 +43,15 @@ void PortBus::begin (void) {
     I2C.set (i2cid, 0x04, pinmodes & 0xff);
     I2C.set (i2cid, 0x05, (pinmodes & 0xff00) >> 8);
     
-    // Set up global interrupt polarity
-    I2C.set (i2cid, 0x0a, 0x02);
+    // Set up global interrupt polarity and interrupt mirror (if needed)
+    if (irq0pin == irq1pin) {
+        I2C.set (i2cid, 0x0a, 0x42);
+        I2C.set (i2cid, 0x0b, 0x42);
+    }
+    else {
+        I2C.set (i2cid, 0x0a, 0x02);
+        I2C.set (i2cid, 0x0b, 0x02);
+    }
     
     // Set all outputs to their correct states
     uint8_t bt = (pinvalues[0] ? 1 : 0) |
@@ -161,7 +168,6 @@ void PortBus::decreaseTimers (void) {
 
 // --------------------------------------------------------------------------
 void PortBus::handleInterrupt (uint8_t bank, bool isirq) {
-    if (i2cid == 0x23) return;
     char dbg[16];
     uint8_t res = 0;
     uint8_t i2coffs = 0x12 + bank;
@@ -316,7 +322,7 @@ void PortService::handleEvent (eventtype tp, eventid id, uint16_t X,
                 if (ports[i]->irq0pin == X) {
                     ports[i]->handleInterrupt (0);
                 }
-                else if (ports[i]->irq1pin == X) {
+                if (ports[i]->irq1pin == X) {
                     ports[i]->handleInterrupt (1);
                 }
                 break;
