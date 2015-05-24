@@ -24,9 +24,10 @@ class Main : public Application
 {
 public:
                      Main (void) {
-                        encval[0] = encval[1] = 64;
-                        oldval[0] = oldval[1] = 0;
-                        missed = 255;
+                        for (uint8_t i=0; i<16; ++i) {
+                            encval[i] = 64;
+                            oldval[i] = 0;
+                        }
                         fmem = 0;
                         
                     }
@@ -60,7 +61,7 @@ void Main::setup (void) {
     Port.addBus (0x20, 22, 23);
     Port.addBus (0x21, 24, 25);
     Port.addBus (0x22, 26, 27);
-    Port.addBus (0x23, 30, 31);
+    Port.addBus (0x23, 29, 29);
     
     InPort.addEncoder (0x2003, 0x2004);
     InPort.addEncoder (0x200f, 0x2008);
@@ -131,7 +132,7 @@ void Main::setup (void) {
 void Main::start (void) {
     // Report the happy news
     Console.write ("Application started\r\n");
-    for (uint8_t i=0; i<12; ++i) {
+    for (uint8_t i=0; i<16; ++i) {
         OutPort.flash (i, 20);
     }
     Display.setBackground (0x30, 0x50, 0x90);
@@ -142,7 +143,7 @@ void Main::start (void) {
     Display.setFont (1);
     Display.setInk (255,255,255);
     Display.setCursor (5,5);
-    Display.write ("MIDIx 1.0 Ready");
+    Display.write ("MIDIx 1.0 Test Mode");
     Display.setCursor (5, 34);
     Display.setFont (0);
     Display.write ("Copyright 2015 Midilab");
@@ -193,11 +194,21 @@ void Main::handleEvent (eventtype tp, eventid id, uint16_t X,
         case EV_INPUT_ABUTTON_DOWN:
             sprintf (dbg, "ADOWN %i\r\n", X);
             Console.write (dbg);
+            if (X == 4) {
+                for (uint8_t i=0; i<16; ++i) {
+                    OutPort.on (i);
+                }
+            }
             break;
             
         case EV_INPUT_ABUTTON_UP:
             sprintf (dbg, "AUP %i\r\n", X);
             Console.write (dbg);
+            if (X == 4) {
+                for (uint8_t i=0; i<16; ++i) {
+                    OutPort.off (i);
+                }
+            }
             break;
             
         case EV_LOOP_BTIRQ:
