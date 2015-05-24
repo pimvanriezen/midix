@@ -196,7 +196,6 @@ public:
                 tft->pushColor (inks[pix]);
             }
             tft->pushColor (inks[0]);
-            Serial.println (inks[0], HEX);
             EventQueue.yield();
         }
         
