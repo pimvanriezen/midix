@@ -9,6 +9,7 @@
 #include "Memory.h"
 #include "IRQ.h"
 #include "EEPROM.h"
+#include "Hardware.h"
 
 #define SVC_LOOP 0x42
 
@@ -62,26 +63,26 @@ Font *Fonts = FontList;
 
 // --------------------------------------------------------------------------
 void Main::setup (void) {
-    EEPROM.setAddress (0x50);
+    EEPROM.setAddress (I2C_EEPROM);
     if (! EEPROM.valid ('FReQ',1,0)) {
         Serial.println (F("EEPROM invalid"));
         EEPROM.init ('FReQ',1,0,512);
         Serial.println (F("EEPROM initialized"));
     }
     else {
-        Serial.println (F("Initialized EEPROM found at 0x50"));
+        Serial.println (F("Initialized EEPROM found"));
     }
 
     // Set the inPort to send to a bogus serviceid, so its
     // events end up in the main loop.
     InPort.setReceiver (SVC_LOOP);
 
-    Port.addBus (0x20, 22, 23);
-    Port.addBus (0x21, 24, 25);
-    Port.addBus (0x22, 26, 27);
+    Port.addBus (I2C_MCP23017_0, PIN_IRQ0, PIN_IRQ1);
+    Port.addBus (I2C_MCP23017_1, PIN_IRQ2, PIN_IRQ3);
+    Port.addBus (I2C_MCP23017_2, PIN_IRQ4, PIN_IRQ5);
     
     // FIXME: broken IRQ connect on prototype PCB
-    Port.addBus (0x23, 29, 29);
+    Port.addBus (I2C_MCP23017_3, PIN_IRQ7, PIN_IRQ7);
     
     // Encoders & LEDS 1&2 (MCP23017 0x20)
     InPort.addEncoder (0x2003, 0x2004);
@@ -149,11 +150,11 @@ void Main::setup (void) {
 
     Display.begin (DriverILI9341P::load());
     
-    Port.addAnalogButton (1, ABUTTON_DOWN_LOW, 1000);
-    Port.addAnalogButton (2, ABUTTON_DOWN_LOW, 1000);
-    Port.addAnalogButton (3, ABUTTON_DOWN_LOW, 1000);
-    Port.addAnalogButton (4, ABUTTON_DOWN_LOW, 1000);
-    Port.addAnalogButton (5, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (APIN_BUTTON_PREV, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (APIN_BUTTON_OK_MENU, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (APIN_BUTTON_NEXT, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (APIN_BUTTON_TRIGGER_TEMPO, ABUTTON_DOWN_LOW, 1000);
+    Port.addAnalogButton (APIN_BUTTON_LAYER_STOP, ABUTTON_DOWN_LOW, 1000);
     
     dtype = DISPLAY_NOTES;
 }

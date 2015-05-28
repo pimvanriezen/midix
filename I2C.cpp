@@ -1,8 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "I2C.h"
-
-#define PIN_I2CRST 53
+#include "Hardware.h"
 
 // ==========================================================================
 // CLASS I2CHandler
