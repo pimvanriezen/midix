@@ -182,7 +182,10 @@ struct Encoder {
 class InPortService : public EventReceiver
 {
 public:
+                 /// Constructor
                  InPortService (void);
+                 
+                 /// Destructor
                 ~InPortService (void);
 
                  /// Sets the serviceid to target with resulting
@@ -198,32 +201,45 @@ public:
                  /// Initialize all registered hardware.
     void         begin (void);
 
-    void         handleEncoder (uint8_t);
+                 /// Service event handler
     void         handleEvent (eventtype tp, eventid id, uint16_t X,
                               uint8_t Y, uint8_t Z);
 
-    uint8_t      outsvc;
+    uint8_t      outsvc; ///< Service-id to message our events to
     
 protected:
-    Button       buttons[24];
-    Encoder      encoders[16];
-    uint8_t      numbuttons;
-    uint8_t      numencoders;
+                 /// Method for interpreting encoder data
+    void         handleEncoder (uint8_t);
+
+    Button       buttons[24]; ///< Registered buttons
+    Encoder      encoders[16]; ///< Registered encoders
+    uint8_t      numbuttons; ///< Number of buttons
+    uint8_t      numencoders; ///< Number of encoders
 };
 
 /// Global instance
 extern InPortService InPort;
 
-/// Utility class for handling outputs 
+/// Utility class for handling outputs (LEDs)
 class OutPortHandler
 {
 public:
+                 /// Constructor
                  OutPortHandler (void);
+                 
+                 /// Destructor
                 ~OutPortHandler (void);
     
+                 /// Register an output by its i2c address
     void         add (uint16_t);
+    
+                 /// Turn an output on
     void         on (uint8_t);
+    
+                 /// Turn an output off
     void         off (uint8_t);
+    
+                 /// Flash the output on for a limited number of ticks.
     void         flash (uint8_t, uint8_t);
 
 protected:
@@ -231,6 +247,7 @@ protected:
     uint8_t      count;
 };
 
+/// Global instance
 extern OutPortHandler OutPort;
 
 #endif
