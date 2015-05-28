@@ -23,6 +23,8 @@ EventQueueManager::EventQueueManager (void) {
         hbuf.ring.rbuf[i].Y = lbuf.ring.rbuf[i].Z = 0;
     }
     timeractive = false;
+    midiclock = 0;
+    bpm = 120;
 
     pinMode (PIN_DEBUG_1, OUTPUT);
     pinMode (PIN_DEBUG_2, OUTPUT);
@@ -50,6 +52,7 @@ void EventQueueManager::sendEvent (eventtype tp, serviceid svc, eventid id,
         lbuf.ring.rbuf[wpos].X.wval = x;
         lbuf.ring.rbuf[wpos].Y = y;
         lbuf.ring.rbuf[wpos].Z = z;
+        yield();
     }
     else {
         cli();
@@ -68,6 +71,27 @@ void EventQueueManager::sendEvent (eventtype tp, serviceid svc, eventid id,
 // --------------------------------------------------------------------------
 void EventQueueManager::yield (void) {
     DBG_ENTER(0);
+    if (timeractive) {
+        ts = millis();
+        if (ts >= nextmidi) {
+            DBG_LEAVE(0);
+            midiclient.svc->handleEvent (TYPE_TIMER,
+                                         EV_TIMER_MIDIPULSE,
+                                         (uint16_t) 0,
+                                         (uint8_t) 0,
+                                         (uint8_t) 0);
+            DBG_ENTER(0);
+            unsigned long interval = (((uint32_t)bpm)*48*256)/1000;
+            nextmidi += (interval >> 8);
+        
+            uint8_t old = nextmidifrac;
+            nextmidifrac = old + (interval & 255);
+            if (nextmidifrac < old) nextmidi++;
+            midiclock++;
+            return;
+        }
+    }
+        
     if (hbuf.ring.rpos != hbuf.ring.wpos) {
         volatile Event *ev = &hbuf.ring.rbuf[hbuf.ring.rpos];
         hbuf.ring.rpos = (hbuf.ring.rpos+1) & (SZ_HIBUF-1);
@@ -82,7 +106,7 @@ void EventQueueManager::yield (void) {
             }
         }
     }
-    if (timeractive && ((ts=millis()) >= timernext)) {
+    if (timeractive && (ts >= timernext)) {
         for (uint8_t i=0; i<timerclientcount; ++i) {
             for (uint8_t j=0; j<numsubscribers; ++j) {
                 if (subscribers[j].id == timerclients[i]) {
@@ -119,6 +143,24 @@ volatile Event *EventQueueManager::waitEvent (bool forever) {
         DBG_ENTER(0);
         //digitalWrite (13, HIGH);
         volatile Event *ev;
+
+        if (ts >= nextmidi) {
+            DBG_LEAVE(0);
+            midiclient.svc->handleEvent (TYPE_TIMER,
+                                         EV_TIMER_MIDIPULSE,
+                                         (uint16_t) 0,
+                                         (uint8_t) 0,
+                                         (uint8_t) 0);
+            DBG_ENTER(0);
+            unsigned long interval = (((uint32_t)bpm)*48*256)/1000;
+            nextmidi += (interval >> 8);
+    
+            uint8_t old = nextmidifrac;
+            nextmidifrac = old + (interval & 255);
+            if (nextmidifrac < old) nextmidi++;
+            midiclock++;
+        }
+
         if (hbuf.ring.rpos != hbuf.ring.wpos) {
             ev = &hbuf.ring.rbuf[hbuf.ring.rpos];
             hbuf.ring.rpos = (hbuf.ring.rpos+1) & (SZ_HIBUF-1);
@@ -186,13 +228,23 @@ void EventQueueManager::subscribeTimer (serviceid svcid) {
 }
 
 // --------------------------------------------------------------------------
+void EventQueueManager::subscribeMIDI (serviceid svcid, EventReceiver *svc) {
+    midiclient.id = svcid;
+    midiclient.svc = svc;
+}
+
+// --------------------------------------------------------------------------
 void EventQueueManager::startTimer (uint16_t p) {
     ts = millis();
     timerperiod = p;
     timernext = ts + p;
     timeractive = true;
+    unsigned long interval = (((uint32_t)bpm)*48*256)/1000;
+    nextmidi = ts + (interval >> 8);
+    nextmidifrac = interval & 255;
 }
         
+// --------------------------------------------------------------------------
 EventQueueManager EventQueue;
 
 // ==========================================================================

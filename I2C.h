@@ -17,6 +17,16 @@ public:
                  /// Resets the I2C bus.
     void         resetBus (void);
     
+                 /// Start a write operation that is going to span
+                 /// multiple bytes (using write()).
+    void         beginWrite (uint8_t dev, uint16_t addr);
+    
+                 /// Write a byte to the stream opened with beginWrite().
+    void         write (uint8_t byte);
+    
+                 /// End the write stream started with beginWrite().
+    void         endWrite (void);
+    
                  /// Write a byte to the I2C bus.
                  /// \param dev The I2C device
                  /// \param addr The register address to set.
@@ -32,8 +42,13 @@ public:
                  /// \param dev The I2C device
                  /// \param addr The register address to read.
     uint16_t     getWord (uint8_t dev, uint8_t addr);
+    
+                 /// Read a stream of bytes from the I2C bus using
+                 /// 16 bit addressing.
+    bool         getBytes (uint8_t dev, uint16_t addr, 
+                           uint8_t *into, uint8_t sz);
 
-    bool         error;
+    uint8_t      error;
     
 protected:
     bool         begun;

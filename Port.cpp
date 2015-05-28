@@ -511,30 +511,36 @@ OutPortHandler::OutPortHandler (void) {
     count = 0;
 }
 
+// --------------------------------------------------------------------------
 OutPortHandler::~OutPortHandler (void) {
 }
 
+// --------------------------------------------------------------------------
 void OutPortHandler::add (uint16_t id) {
     outputs[count++] = id;
     Port.addOutput (id);
 }
 
+// --------------------------------------------------------------------------
 void OutPortHandler::on (uint8_t outnum) {
     if (outnum < count) {
         Port.pinOut (outputs[outnum], 255);
     }
 }
 
+// --------------------------------------------------------------------------
 void OutPortHandler::off (uint8_t outnum) {
     if (outnum < count) {
         Port.pinOut (outputs[outnum], 0);
     }
 }
 
+// --------------------------------------------------------------------------
 void OutPortHandler::flash (uint8_t outnum, uint8_t ti) {
     if (outnum < count) {
         Port.pinOut (outputs[outnum], ti);
     }
 }
 
+// --------------------------------------------------------------------------
 OutPortHandler OutPort;

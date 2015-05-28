@@ -12,24 +12,29 @@
 /// waitEvent loop.
 enum eventtype
 {
-    TYPE_NONE,
-    TYPE_IRQ,
-    TYPE_TIMER,
-    TYPE_REQUEST
+    TYPE_NONE, ///< Uninitialized
+    TYPE_IRQ, ///< Event from interrupt handler
+    TYPE_TIMER, ///< Timer event
+    TYPE_REQUEST ///< Request event (low priority).
 };
 
+/// Service-specific event id (6 bits; 0x00 - 0x3f, where the upper range
+/// of 16 values (0x30-0x3f) is reserved for global event types.
 typedef uint8_t eventid;
+
+/// Service id.
 typedef uint8_t serviceid;
 
 /// Convenience type for mixing words and bytes.
 union monoduo
 {
-    uint16_t    wval;
-    uint8_t     val[2];
+    uint16_t    wval;   ///< Value cast as a 16 bit number
+    uint8_t     val[2]; ///< Value cast as two 8 bit numbers
 };
 
 /// Event type for a timer tick.
 #define EV_TIMER_TICK 0x3e
+#define EV_TIMER_MIDIPULSE 0x3f
 
 /// A queued event as it exists inside a ring buffer. Contains
 /// identifying information and 32 bits of user data.
@@ -65,12 +70,15 @@ struct Callback
 /// for both ring buffers used in the EventQueueManager.
 struct MXRingBuffer
 {
-    volatile uint8_t     wpos;
-    volatile uint8_t     rpos;
-    volatile Event       rbuf[0];
+    volatile uint8_t     wpos; ///< Write cursor
+    volatile uint8_t     rpos; ///< Read cursor
+    volatile Event       rbuf[0]; ///< Buffer storage
 };
 
+/// Size of the high priority ringbuffer
 #define SZ_HIBUF 8
+
+/// Size of the low priority ringbuffer
 #define SZ_LOBUF 128
 
 /// Storage spec for the high priority buffer (8 entries).
@@ -127,12 +135,19 @@ public:
                          /// Subscribe a serviceid to timer events.
     void                 subscribeTimer (serviceid s);
     
+                         /// Subscribe a serviceid to the MIDI clock.
+    void                 subscribeMIDI (serviceid s, EventReceiver *svc);
+    
                          /// Initialize the timer.
                          /// \param p Interval in milliseconds.
     void                 startTimer (uint16_t p);
 
     unsigned long        ts; ///< Current time (if timer enabled).
-    uint16_t             missedTicks; 
+    unsigned long        nextmidi; ///< Time of next midi tick
+    uint8_t              nextmidifrac; ///< Fractional part of above.
+    uint32_t             midiclock; ///< Current MIDI tick
+    uint16_t             missedTicks; ///< Statistics
+    uint8_t              bpm; ///< MIDI tempo
     
 protected:
     HighPriorityBuffer   hbuf; ///< High prio ringbuffer
@@ -144,6 +159,7 @@ protected:
     uint16_t             timerperiod; ///< Tick period in ms.
     uint8_t              timerclients[4]; ///< Services that want ticks.
     uint8_t              timerclientcount; ///< Count
+    Callback             midiclient; ///< Service that handles midi pulse
 };
 
 extern EventQueueManager EventQueue;

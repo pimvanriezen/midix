@@ -56,6 +56,25 @@ void I2CHandler::begin (void) {
 }
 
 // --------------------------------------------------------------------------
+void I2CHandler::beginWrite (uint8_t dev, uint16_t addr) {
+    if (! begun) begin();
+    noInterrupts();
+    Wire.beginTransmission (dev);
+    Wire.write ((addr & 0xef00) >> 8);
+    Wire.write (addr & 0xff);
+}
+
+// --------------------------------------------------------------------------
+void I2CHandler::write (uint8_t byte) {
+    Wire.write (byte);
+}
+
+// --------------------------------------------------------------------------
+void I2CHandler::endWrite (void) {
+    error = Wire.endTransmission();
+}
+
+// --------------------------------------------------------------------------
 void I2CHandler::set (uint8_t dev, uint8_t addr, uint8_t val) {
     if (! begun) begin();
     noInterrupts();
@@ -101,6 +120,23 @@ uint16_t I2CHandler::getWord (uint8_t dev, uint8_t addr) {
         hi = Wire.read();
     }
     return lo | (hi << 8);
+}
+
+// --------------------------------------------------------------------------
+bool I2CHandler::getBytes (uint8_t dev, uint16_t addr,
+                           uint8_t *into, uint8_t sz) {
+    uint8_t bytes[4];
+    if (! begun) begin();
+    Wire.beginTransmission (dev);
+    Wire.write ((addr & 0xfe) >> 8);
+    Wire.write (addr & 0xff);
+    error = Wire.endTransmission();
+    if (error) return false;
+    Wire.requestFrom (dev, sz);
+    for (uint8_t i=0; i<sz; ++i) {
+        into[i] = Wire.read();
+    }
+    return true;
 }
 
 I2CHandler I2C;

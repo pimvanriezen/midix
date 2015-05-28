@@ -1,3 +1,5 @@
+#ifdef CONFIG_GFX_ILI9341SPI
+
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
@@ -245,7 +247,12 @@ public:
                 break;
             
             case GFX_DRAWBOX:
-                drawBox (xx.val[0], Y, xx.val[1], Z);
+                Serial.write ("DRAWBOX ");
+                Serial.print (xx.val[0], HEX);
+                Serial.print (" ");
+                Serial.println (Z, HEX);
+                drawBox ((uint16_t)xx.val[0]*2, Y, 
+                         ((uint16_t)xx.val[0]*2) + xx.val[1], Y+Z);
                 break;
             
             case GFX_DRAWCIRCLE:
@@ -284,3 +291,5 @@ EventReceiver *DriverILI9341::load (void) {
     Adafruit_ILI9341 *tft = new Adafruit_ILI9341(TFT_CS, TFT_DC);
     return new MXScreen (tft);
 }
+
+#endif
